@@ -62,6 +62,7 @@
           <button class='w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition font-bold' id='nav-books' onclick='switchTab("books")'><i class='w-5 h-5' data-lucide='book-open'></i> Buku</button>
           <button class='w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition font-bold' id='nav-members' onclick='switchTab("members")'><i class='w-5 h-5' data-lucide='users'></i> Anggota</button>
           <button class='w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition font-bold' id='nav-circulation' onclick='switchTab("circulation")'><i class='w-5 h-5' data-lucide='scan-line'></i> Sirkulasi</button>
+          <button class='w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition font-bold' id='nav-stats' onclick='switchTab("stats")'><i class='w-5 h-5' data-lucide='bar-chart-3'></i> Statistik</button>
           <button class='w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition font-bold' id='nav-reports' onclick='switchTab("reports")'><i class='w-5 h-5' data-lucide='file-text'></i> Laporan</button>
           <button class='w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition font-bold' id='nav-settings' onclick='switchTab("settings")'><i class='w-5 h-5' data-lucide='settings'></i> Pengaturan</button>
         </nav>
@@ -76,6 +77,7 @@
           <button class='flex flex-col items-center justify-center py-2 px-3 text-slate-400 transition min-w-[70px] shrink-0 rounded-2xl' id='mob-books' onclick='switchTab("books")'><i class='w-6 h-6 mb-1' data-lucide='book-open'></i><span class='text-[9px] font-bold'>Buku</span></button>
           <button class='flex flex-col items-center justify-center py-2 px-3 text-slate-400 transition min-w-[70px] shrink-0 rounded-2xl' id='mob-members' onclick='switchTab("members")'><i class='w-6 h-6 mb-1' data-lucide='users'></i><span class='text-[9px] font-bold'>Anggota</span></button>
           <button class='flex flex-col items-center justify-center py-2 px-3 text-slate-400 transition min-w-[70px] shrink-0 rounded-2xl' id='mob-circulation' onclick='switchTab("circulation")'><i class='w-6 h-6 mb-1' data-lucide='scan-line'></i><span class='text-[9px] font-bold'>Scan</span></button>
+          <button class='flex flex-col items-center justify-center py-2 px-3 text-slate-400 transition min-w-[70px] shrink-0 rounded-2xl' id='mob-stats' onclick='switchTab("stats")'><i class='w-6 h-6 mb-1' data-lucide='bar-chart-3'></i><span class='text-[9px] font-bold'>Statistik</span></button>
           <button class='flex flex-col items-center justify-center py-2 px-3 text-slate-400 transition min-w-[70px] shrink-0 rounded-2xl' id='mob-reports' onclick='switchTab("reports")'><i class='w-6 h-6 mb-1' data-lucide='file-text'></i><span class='text-[9px] font-bold'>Laporan</span></button>
           <button class='flex flex-col items-center justify-center py-2 px-3 text-slate-400 transition min-w-[70px] shrink-0 rounded-2xl' id='mob-settings' onclick='switchTab("settings")'><i class='w-6 h-6 mb-1' data-lucide='settings'></i><span class='text-[9px] font-bold'>Menu</span></button>
         </div>
@@ -145,6 +147,7 @@
     
     const esc = (str) => { if (!str) return ''; return String(str).replace(/[&<>'"]/g, t => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":"&#39;",'"':"&quot;"}[t] || t)); };
     const formatDateStr = (s) => { if(!s) return "-"; if(String(s).includes('T')) { try { const d = new Date(s); if (!isNaN(d.getTime())) return d.toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'}); } catch(e) {} } return s; };
+    const formatRupiah = (n) => { const num = Number(n) || 0; return 'Rp ' + num.toLocaleString('id-ID'); };
 
     // --- SWEETALERT INTEGRATION ---
     const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
@@ -191,6 +194,7 @@
         'books': { title: 'INVENTARIS BUKU', sub: esc(schoolName) },
         'members': { title: 'DATA ANGGOTA', sub: esc(schoolName) },
         'circulation': { title: 'SIRKULASI & SCAN', sub: esc(schoolName) },
+        'stats': { title: 'STATISTIK & PENGUNJUNG TERAKTIF', sub: esc(schoolName) },
         'reports': { title: 'LAPORAN SISTEM', sub: esc(schoolName) },
         'settings': { title: 'PENGATURAN', sub: esc(schoolName) }
       };
@@ -199,7 +203,7 @@
       if($('header-subtitle')) $('header-subtitle').innerText = labels[tabId] ? labels[tabId].sub : '';
 
       // Reset Styles
-      ['dashboard','books','members','circulation','reports','settings'].forEach(id => {
+      ['dashboard','books','members','circulation','stats','reports','settings'].forEach(id => {
         if($('nav-'+id)) $('nav-'+id).className = 'w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition font-bold text-slate-500 hover:bg-emerald-50 hover:text-emerald-800';
         if($('mob-'+id)) { $('mob-'+id).className = 'flex flex-col items-center justify-center py-2 px-3 text-slate-400 hover:text-emerald-700 transition min-w-[70px] shrink-0 rounded-2xl'; $('mob-'+id).querySelector('span').classList.remove('text-emerald-700'); }
       });
@@ -219,6 +223,7 @@
         case 'books': content.innerHTML = getBooksHTML(); break;
         case 'members': content.innerHTML = getMembersHTML(); break;
         case 'circulation': content.innerHTML = getCirculationHTML(); break;
+        case 'stats': content.innerHTML = getStatsHTML(); break;
         case 'reports': content.innerHTML = getReportsHTML(); window.updateCountsInReports(); break;
         case 'settings': content.innerHTML = getSettingsHTML(); populateSettings(); break;
         default: content.innerHTML = getDashboardHTML(); break;
@@ -255,7 +260,11 @@
 
     function getMembersHTML() {
       if (appState.setupError) return getDashboardHTML();
-      let cards = appState.members.map(m => `<div class="p-3 md:p-4 bg-white rounded-2xl md:rounded-3xl border border-slate-100 shadow-sm flex items-center gap-3 hover:border-emerald-500 transition"><div class="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-slate-200 overflow-hidden flex-shrink-0 border"><img src="${esc(m.PhotoUrl) || 'https://api.dicebear.com/7.x/initials/svg?seed='+esc(m.Name)}" class="w-full h-full object-cover" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=Err'"/></div><div class="flex-1 overflow-hidden"><p class="font-black text-slate-800 truncate text-xs md:text-sm">${esc(m.Name)}</p><p class="text-[8px] md:text-[10px] text-slate-500 font-bold uppercase tracking-widest truncate">${esc(m.Class)} • <span class="font-mono text-emerald-700">${esc(m.MemberID)}</span></p></div><div class="flex flex-row gap-1 md:gap-2"><button onclick="printCard('${esc(m.ID)}')" title="Cetak Kartu" class="p-1.5 md:p-2 bg-slate-100 text-slate-600 rounded-lg md:rounded-xl hover:bg-slate-800 hover:text-white transition"><i data-lucide="printer" class="w-4 h-4"></i></button><button onclick="deleteItem('Members', '${esc(m.ID)}')" title="Hapus" class="p-1.5 md:p-2 bg-red-50 text-red-600 rounded-lg md:rounded-xl hover:bg-red-600 hover:text-white transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`).join('');
+      let cards = appState.members.map(m => {
+        const unpaidFine = appState.loans.filter(l => l.MemberID === m.ID && l.FinePaid === 'belum').reduce((sum,l) => sum + (Number(l.Fine)||0), 0);
+        const fineBadge = unpaidFine > 0 ? `<span class="text-[7px] md:text-[8px] font-black bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1 whitespace-nowrap">Denda ${formatRupiah(unpaidFine)}</span>` : '';
+        return `<div class="p-3 md:p-4 bg-white rounded-2xl md:rounded-3xl border ${unpaidFine>0?'border-red-200':'border-slate-100'} shadow-sm flex items-center gap-3 hover:border-emerald-500 transition"><div class="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-slate-200 overflow-hidden flex-shrink-0 border"><img src="${esc(m.PhotoUrl) || 'https://api.dicebear.com/7.x/initials/svg?seed='+esc(m.Name)}" class="w-full h-full object-cover" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=Err'"/></div><div class="flex-1 overflow-hidden"><p class="font-black text-slate-800 truncate text-xs md:text-sm flex items-center">${esc(m.Name)}${fineBadge}</p><p class="text-[8px] md:text-[10px] text-slate-500 font-bold uppercase tracking-widest truncate">${esc(m.Class)} • <span class="font-mono text-emerald-700">${esc(m.MemberID)}</span></p></div><div class="flex flex-row gap-1 md:gap-2"><button onclick="printCard('${esc(m.ID)}')" title="Cetak Kartu" class="p-1.5 md:p-2 bg-slate-100 text-slate-600 rounded-lg md:rounded-xl hover:bg-slate-800 hover:text-white transition"><i data-lucide="printer" class="w-4 h-4"></i></button><button onclick="deleteItem('Members', '${esc(m.ID)}')" title="Hapus" class="p-1.5 md:p-2 bg-red-50 text-red-600 rounded-lg md:rounded-xl hover:bg-red-600 hover:text-white transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`;
+      }).join('');
       if(!cards) cards = `<div class="col-span-full text-center py-10 text-slate-400 font-bold text-sm">Belum ada data anggota.</div>`;
       return `
         <div class="bg-white p-4 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100">
@@ -302,6 +311,88 @@
            </form>
         </div>
       `;
+    }
+
+    function getStatsHTML() {
+      if (appState.setupError) return getDashboardHTML();
+
+      // Anggota Paling Aktif (berdasarkan jumlah transaksi peminjaman)
+      const borrowerCounts = {};
+      appState.loans.forEach(l => { if(!l.MemberID) return; borrowerCounts[l.MemberID] = (borrowerCounts[l.MemberID] || 0) + 1; });
+      const topBorrowers = Object.entries(borrowerCounts).map(([memberId, count]) => {
+        const m = appState.members.find(x => x.ID === memberId);
+        const fallbackName = appState.loans.find(l => l.MemberID === memberId)?.MemberName || 'Anggota Dihapus';
+        return { name: m ? m.Name : fallbackName, cls: m ? m.Class : '-', count };
+      }).sort((a,b) => b.count - a.count).slice(0, 10);
+
+      // Buku Terpopuler
+      const bookCounts = {};
+      appState.loans.forEach(l => { if(!l.BookTitle) return; bookCounts[l.BookTitle] = (bookCounts[l.BookTitle] || 0) + 1; });
+      const topBooks = Object.entries(bookCounts).map(([title, count]) => ({ title, count })).sort((a,b) => b.count - a.count).slice(0, 10);
+
+      const maxBorrowerCount = topBorrowers.length ? topBorrowers[0].count : 1;
+      const maxBookCount = topBooks.length ? topBooks[0].count : 1;
+
+      // Denda
+      const unpaidFines = appState.loans.filter(l => l.FinePaid === 'belum');
+      const totalUnpaid = unpaidFines.reduce((sum,l) => sum + (Number(l.Fine)||0), 0);
+      const totalPaid = appState.loans.filter(l => l.FinePaid === 'lunas').reduce((sum,l) => sum + (Number(l.Fine)||0), 0);
+
+      const borrowerRows = topBorrowers.length ? topBorrowers.map((b,i) => `
+        <div class="flex items-center gap-3 py-2.5 border-b border-slate-50 last:border-0">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center font-black text-[10px] ${i<3 ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}">${i+1}</div>
+          <div class="flex-1 overflow-hidden"><p class="font-bold text-slate-800 text-xs md:text-sm truncate">${esc(b.name)}</p><p class="text-[9px] text-slate-400 font-bold uppercase">${esc(b.cls)}</p></div>
+          <div class="flex-1 max-w-[100px] hidden sm:block"><div class="h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-emerald-500 rounded-full" style="width:${(b.count/maxBorrowerCount*100)}%"></div></div></div>
+          <div class="font-black text-emerald-700 text-xs md:text-sm w-14 text-right">${b.count}x</div>
+        </div>`).join('') : `<p class="text-center py-8 text-slate-400 font-bold text-sm">Belum ada data peminjaman.</p>`;
+
+      const bookRows = topBooks.length ? topBooks.map((b,i) => `
+        <div class="flex items-center gap-3 py-2.5 border-b border-slate-50 last:border-0">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center font-black text-[10px] ${i<3 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}">${i+1}</div>
+          <div class="flex-1 overflow-hidden"><p class="font-bold text-slate-800 text-xs md:text-sm truncate">${esc(b.title)}</p></div>
+          <div class="flex-1 max-w-[100px] hidden sm:block"><div class="h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-blue-500 rounded-full" style="width:${(b.count/maxBookCount*100)}%"></div></div></div>
+          <div class="font-black text-blue-700 text-xs md:text-sm w-14 text-right">${b.count}x</div>
+        </div>`).join('') : `<p class="text-center py-8 text-slate-400 font-bold text-sm">Belum ada data peminjaman.</p>`;
+
+      const fineRows = unpaidFines.length ? unpaidFines.map(l => `
+        <div class="flex items-center gap-3 py-3 border-b border-red-50 last:border-0">
+          <div class="flex-1 overflow-hidden"><p class="font-bold text-slate-800 text-xs md:text-sm truncate">${esc(l.MemberName)}</p><p class="text-[9px] text-slate-400 font-bold truncate">${esc(l.BookTitle)}</p></div>
+          <div class="font-black text-red-600 text-xs md:text-sm whitespace-nowrap">${formatRupiah(l.Fine)}</div>
+          <button onclick="payFine('${esc(l.ID)}')" class="text-[9px] md:text-[10px] font-black bg-red-600 text-white px-2.5 py-1.5 rounded-lg hover:bg-red-700 transition whitespace-nowrap">Tandai Lunas</button>
+        </div>`).join('') : `<p class="text-center py-8 text-slate-400 font-bold text-sm">Tidak ada denda tertunggak. 🎉</p>`;
+
+      return `
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-6 md:mb-8">
+          <div class="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-sm border border-slate-100"><p class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Transaksi</p><p class="text-2xl md:text-3xl font-black text-slate-800">${appState.loans.length}</p></div>
+          <div class="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-sm border border-slate-100"><p class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Denda Terkumpul</p><p class="text-xl md:text-2xl font-black text-green-600">${formatRupiah(totalPaid)}</p></div>
+          <div class="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-sm border border-red-100"><p class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Denda Belum Lunas</p><p class="text-xl md:text-2xl font-black text-red-600">${formatRupiah(totalUnpaid)}</p></div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
+          <div class="bg-white p-5 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100">
+            <h3 class="font-black text-slate-800 text-base md:text-lg mb-1 flex items-center gap-2"><i data-lucide="trophy" class="w-4 h-4 md:w-5 md:h-5 text-emerald-600"></i> Anggota Paling Aktif</h3>
+            <p class="text-[10px] md:text-xs text-slate-400 font-bold mb-4">Berdasarkan jumlah transaksi peminjaman</p>
+            <div>${borrowerRows}</div>
+          </div>
+          <div class="bg-white p-5 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100">
+            <h3 class="font-black text-slate-800 text-base md:text-lg mb-1 flex items-center gap-2"><i data-lucide="flame" class="w-4 h-4 md:w-5 md:h-5 text-blue-600"></i> Buku Terpopuler</h3>
+            <p class="text-[10px] md:text-xs text-slate-400 font-bold mb-4">Berdasarkan jumlah kali dipinjam</p>
+            <div>${bookRows}</div>
+          </div>
+        </div>
+        <div class="bg-white p-5 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-red-100">
+          <h3 class="font-black text-red-700 text-base md:text-lg mb-1 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4 md:w-5 md:h-5"></i> Denda Belum Lunas</h3>
+          <p class="text-[10px] md:text-xs text-slate-400 font-bold mb-4">Tandai lunas setelah anggota membayar denda keterlambatan</p>
+          <div>${fineRows}</div>
+        </div>
+      `;
+    }
+
+    async function payFine(loanId) {
+      const result = await Swal.fire({ title: 'Tandai Lunas?', text: "Denda akan ditandai sudah dibayar.", icon: 'question', showCancelButton: true, confirmButtonColor: '#059669', cancelButtonColor: '#64748b', confirmButtonText: 'Ya, Lunas', cancelButtonText: 'Batal' });
+      if(!result.isConfirmed) return;
+      showLoader(true);
+      const res = await apiCall('pay_fine', { loanId });
+      if(res){ showToast(res.message); await initApp(); } else { showLoader(false); }
     }
 
     function setScanMode(mode) {
@@ -384,6 +475,21 @@
             <div><div class="w-10 h-10 md:w-14 md:h-14 bg-red-100 text-red-600 rounded-xl md:rounded-2xl flex items-center justify-center mb-4 md:mb-6"><i data-lucide="alert-triangle" class="w-5 h-5 md:w-auto md:h-auto"></i></div><h3 class="text-base md:text-xl font-black text-red-800 mb-2">Tunggakan Akhir</h3><p class="text-xs md:text-sm text-red-600/80 leading-relaxed mb-4 md:mb-6 font-bold">Laporan krusial siswa kelas XII/9 untuk Surat Bebas Pustaka.</p></div>
             <button onclick="printReport('graduating')" class="${gradCount===0?'bg-slate-300 text-slate-500 cursor-not-allowed':'bg-red-700 text-white hover:bg-red-800'} py-3 md:py-4 rounded-xl md:rounded-2xl font-black shadow-lg shadow-red-200 text-xs md:text-base transition">Cetak Tunggakan (${gradCount} Siswa)</button>
           </div>
+
+          <div class="bg-red-50/80 p-5 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border border-red-200 shadow-sm flex flex-col justify-between">
+            <div><div class="w-10 h-10 md:w-14 md:h-14 bg-red-100 text-red-600 rounded-xl md:rounded-2xl flex items-center justify-center mb-4 md:mb-6"><i data-lucide="badge-dollar-sign" class="w-5 h-5 md:w-auto md:h-auto"></i></div><h3 class="text-base md:text-xl font-black text-red-800 mb-2">Denda Belum Lunas</h3><p class="text-xs md:text-sm text-red-600/80 leading-relaxed mb-4 md:mb-6 font-bold">Daftar denda keterlambatan yang belum dibayarkan anggota.</p></div>
+            <button onclick="printReport('unpaid_fines')" class="${appState.loans.filter(l=>l.FinePaid==='belum').length===0?'bg-slate-300 text-slate-500 cursor-not-allowed':'bg-red-700 text-white hover:bg-red-800'} py-3 md:py-4 rounded-xl md:rounded-2xl font-black shadow-lg shadow-red-200 text-xs md:text-base transition">Cetak Denda (${appState.loans.filter(l=>l.FinePaid==='belum').length} Data)</button>
+          </div>
+
+          <div class="bg-white p-5 md:p-8 rounded-[2rem] md:rounded-[2.5rem] flex flex-col justify-between shadow-sm border border-slate-100">
+            <div><div class="w-10 h-10 md:w-14 md:h-14 bg-emerald-50 text-emerald-600 rounded-xl md:rounded-2xl flex items-center justify-center mb-4 md:mb-6"><i data-lucide="trophy" class="w-5 h-5 md:w-auto md:h-auto"></i></div><h3 class="text-base md:text-xl font-black text-slate-800 mb-2">Anggota Teraktif</h3><p class="text-xs md:text-sm text-slate-500 leading-relaxed mb-4 md:mb-6 font-medium">Ranking anggota berdasarkan jumlah transaksi peminjaman.</p></div>
+            <button onclick="printReport('top_borrowers')" class="${appState.loans.length===0?'bg-slate-300 text-slate-500 cursor-not-allowed':'platinum-gradient hover:opacity-90'} py-3 md:py-4 rounded-xl md:rounded-2xl font-black shadow-lg text-xs md:text-base transition">Cetak Ranking Anggota</button>
+          </div>
+
+          <div class="bg-white p-5 md:p-8 rounded-[2rem] md:rounded-[2.5rem] flex flex-col justify-between shadow-sm border border-slate-100">
+            <div><div class="w-10 h-10 md:w-14 md:h-14 bg-blue-50 text-blue-600 rounded-xl md:rounded-2xl flex items-center justify-center mb-4 md:mb-6"><i data-lucide="flame" class="w-5 h-5 md:w-auto md:h-auto"></i></div><h3 class="text-base md:text-xl font-black text-slate-800 mb-2">Buku Terpopuler</h3><p class="text-xs md:text-sm text-slate-500 leading-relaxed mb-4 md:mb-6 font-medium">Ranking buku berdasarkan jumlah kali dipinjam.</p></div>
+            <button onclick="printReport('top_books')" class="${appState.loans.length===0?'bg-slate-300 text-slate-500 cursor-not-allowed':'bg-blue-600 text-white hover:opacity-90'} py-3 md:py-4 rounded-xl md:rounded-2xl font-black shadow-lg text-xs md:text-base transition">Cetak Ranking Buku</button>
+          </div>
         </div>
       `;
     }
@@ -404,6 +510,14 @@
                 <div><label class="text-[9px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Kota (Tempat TTD)</label><input type="text" id="set-city" class="w-full mt-1 p-3 md:p-4 bg-slate-50 rounded-xl md:rounded-2xl outline-none border focus:ring-2 focus:ring-emerald-500 font-bold text-xs md:text-sm"/></div>
               </div>
               <div class="space-y-5 md:space-y-8">
+                <div class="space-y-4 md:space-y-5">
+                  <h3 class="font-black text-red-600 text-[10px] md:text-xs uppercase tracking-widest border-l-2 md:border-l-4 border-red-600 pl-2">Denda Keterlambatan</h3>
+                  <div class="grid grid-cols-2 gap-4">
+                    <div><label class="text-[9px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Masa Pinjam (Hari)</label><input type="number" min="1" id="set-loan-duration" class="w-full mt-1 p-3 md:p-4 bg-slate-50 rounded-xl md:rounded-2xl outline-none border focus:ring-2 focus:ring-red-500 font-bold text-xs md:text-sm"/></div>
+                    <div><label class="text-[9px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Denda / Hari (Rp)</label><input type="number" min="0" id="set-fine-per-day" class="w-full mt-1 p-3 md:p-4 bg-slate-50 rounded-xl md:rounded-2xl outline-none border focus:ring-2 focus:ring-red-500 font-bold text-xs md:text-sm"/></div>
+                  </div>
+                  <p class="text-[10px] text-red-500 font-bold ml-2">*Denda dihitung otomatis saat buku dikembalikan melewati masa pinjam.</p>
+                </div>
                 <div class="space-y-4 md:space-y-5">
                   <h3 class="font-black text-emerald-600 text-[10px] md:text-xs uppercase tracking-widest border-l-2 md:border-l-4 border-emerald-600 pl-2">Logo Instansi</h3>
                   <div><label class="text-[9px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Logo Kiri (Daerah)</label><input type="text" id="set-logo-l" class="w-full mt-1 p-3 md:p-4 bg-slate-50 rounded-xl md:rounded-2xl outline-none border focus:ring-2 focus:ring-emerald-500 font-bold text-xs md:text-sm"/></div>
@@ -434,6 +548,7 @@
           $('set-logo-l').value = appState.settings.logoLeft || ''; $('set-logo-r').value = appState.settings.logoRight || '';
           $('set-pname').value = appState.settings.principalName || ''; $('set-pnip').value = appState.settings.principalNip || '';
           $('set-lname').value = appState.settings.librarianName || ''; $('set-lnip').value = appState.settings.librarianNip || '';
+          $('set-loan-duration').value = appState.settings.loanDurationDays || 7; $('set-fine-per-day').value = appState.settings.finePerDay || 0;
         }
       }, 100);
     }
@@ -463,7 +578,7 @@
 
     async function submitSettings(e) {
       e.preventDefault(); showLoader(true);
-      const payload = { govName: $('set-gov').value, deptName: $('set-dept').value, schoolName: $('set-school').value, address: $('set-address').value, city: $('set-city').value, logoLeft: $('set-logo-l').value, logoRight: $('set-logo-r').value, principalName: $('set-pname').value, principalNip: $('set-pnip').value, librarianName: $('set-lname').value, librarianNip: $('set-lnip').value };
+      const payload = { govName: $('set-gov').value, deptName: $('set-dept').value, schoolName: $('set-school').value, address: $('set-address').value, city: $('set-city').value, logoLeft: $('set-logo-l').value, logoRight: $('set-logo-r').value, principalName: $('set-pname').value, principalNip: $('set-pnip').value, librarianName: $('set-lname').value, librarianNip: $('set-lnip').value, loanDurationDays: $('set-loan-duration').value, finePerDay: $('set-fine-per-day').value };
       const res = await apiCall('save_settings', payload);
       if(res){ showToast(res.message); appState.setupError = false; await initApp(); } else { showLoader(false); }
     }
@@ -589,6 +704,9 @@
          if(type === 'borrowed' && appState.loans.filter(l=>l.Status==='borrowed').length === 0) return;
          if(type === 'returned_history' && appState.loans.filter(l=>l.Status==='returned').length === 0) return;
          if(type === 'graduating' && appState.loans.filter(l=>{ const m=appState.members.find(x=>x.ID===l.MemberID); return l.Status==='borrowed' && (String(m?.Class||'').includes('9')||String(m?.Class||'').includes('XII')); }).length === 0) return;
+         if(type === 'unpaid_fines' && appState.loans.filter(l=>l.FinePaid==='belum').length === 0) return;
+         if(type === 'top_borrowers' && appState.loans.length === 0) return;
+         if(type === 'top_books' && appState.loans.length === 0) return;
       }
       if (type === 'book_barcodes' && appState.books.length === 0) return;
 
@@ -636,7 +754,16 @@
             else if(type==='borrowed'){ title="LAPORAN PEMINJAMAN AKTIF"; ths="<th>No</th><th>Judul Buku</th><th>Nama Peminjam</th><th>Tgl Pinjam</th>"; trs=appState.loans.filter(l=>l.Status==='borrowed').map((l,i)=>`<tr style="page-break-inside: avoid; break-inside: avoid;"><td>${i+1}</td><td>${esc(l.BookTitle)}</td><td>${esc(l.MemberName)}</td><td>${formatDateStr(l.LoanDate)}</td></tr>`).join(''); }
             else if(type==='returned_history'){ title="RIWAYAT PENGEMBALIAN SUKSES"; ths="<th>No</th><th>Judul Buku</th><th>Nama Peminjam</th><th>Tgl Kembali</th>"; trs=appState.loans.filter(l=>l.Status==='returned').map((l,i)=>`<tr style="page-break-inside: avoid; break-inside: avoid;"><td>${i+1}</td><td>${esc(l.BookTitle)}</td><td>${esc(l.MemberName)}</td><td>${formatDateStr(l.ReturnDate)}</td></tr>`).join(''); }
             else if(type==='graduating'){ title="LAPORAN TUNGGAKAN SISWA AKHIR (SYARAT BEBAS PUSTAKA)"; ths="<th>No</th><th>Nama Siswa</th><th>Kelas</th><th>Buku Dipinjam</th>"; trs=appState.loans.filter(l=>{ const m=appState.members.find(x=>x.ID===l.MemberID); return l.Status==='borrowed' && (String(m?.Class||'').includes('9')||String(m?.Class||'').includes('XII')); }).map((l,i)=>{ const m=appState.members.find(x=>x.ID===l.MemberID); return `<tr style="page-break-inside: avoid; break-inside: avoid;"><td>${i+1}</td><td>${esc(l.MemberName)}</td><td>${m?esc(m.Class):'-'}</td><td>${esc(l.BookTitle)}</td></tr>`;}).join(''); }
-            html = `<div style="padding:10mm; background:white;">${getKop(title)}<style>table.r-table{width:100%; border-collapse:collapse; font-size:8pt; margin-top:5mm;} table.r-table tr{page-break-inside:avoid; break-inside: avoid;} table.r-table th, table.r-table td{border:1px solid #333; padding:2mm; text-align:left;} table.r-table th{background:#e2e8f0; font-weight:bold;} thead{display:table-header-group;}</style><table class="r-table"><thead><tr>${ths}</tr></thead><tbody>${trs||'<tr><td colspan="5" style="text-align:center;">Nihil.</td></tr>'}</tbody></table><div style="margin-top: 15mm; font-family: sans-serif; display: flex; justify-content: space-between; width: 100%; page-break-inside: avoid; break-inside: avoid;"><div style="text-align: center; width: 40%;"><p style="margin: 0; font-size: 9pt;">Mengetahui,</p><p style="margin: 0; font-size: 9pt; font-weight: bold;">Kepala Sekolah</p><div style="height: 15mm;"></div><p style="margin: 0; font-size: 9pt; font-weight: bold; text-decoration: underline;">${esc(appState.settings.principalName)}</p><p style="margin: 0; font-size: 9pt;">NIP. ${esc(appState.settings.principalNip)}</p></div><div style="text-align: center; width: 40%;"><p style="margin: 0; font-size: 9pt;">${esc(appState.settings.city)}, ${new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'})}</p><p style="margin: 0; font-size: 9pt; font-weight: bold;">Kepala Perpustakaan</p><div style="height: 15mm;"></div><p style="margin: 0; font-size: 9pt; font-weight: bold; text-decoration: underline;">${esc(appState.settings.librarianName)}</p><p style="margin: 0; font-size: 9pt;">NIP. ${esc(appState.settings.librarianNip)}</p></div></div></div>`;
+            else if(type==='unpaid_fines'){ title="LAPORAN DENDA KETERLAMBATAN BELUM LUNAS"; ths="<th>No</th><th>Anggota</th><th>Kelas</th><th>Buku</th><th>Tgl Kembali</th><th>Denda</th>"; trs=appState.loans.filter(l=>l.FinePaid==='belum').map((l,i)=>{ const m=appState.members.find(x=>x.ID===l.MemberID); return `<tr style="page-break-inside: avoid; break-inside: avoid;"><td>${i+1}</td><td>${esc(l.MemberName)}</td><td>${m?esc(m.Class):'-'}</td><td>${esc(l.BookTitle)}</td><td>${formatDateStr(l.ReturnDate)}</td><td>${formatRupiah(l.Fine)}</td></tr>`;}).join(''); }
+            else if(type==='top_borrowers'){ title="LAPORAN ANGGOTA PALING AKTIF"; ths="<th>No</th><th>Nama</th><th>Kelas</th><th>Jumlah Peminjaman</th>";
+              const bc={}; appState.loans.forEach(l=>{ if(!l.MemberID) return; bc[l.MemberID]=(bc[l.MemberID]||0)+1; });
+              const tb=Object.entries(bc).map(([mid,count])=>{ const m=appState.members.find(x=>x.ID===mid); const fb=(appState.loans.find(l=>l.MemberID===mid)||{}).MemberName||'Anggota Dihapus'; return {name:m?m.Name:fb, cls:m?m.Class:'-', count}; }).sort((a,b)=>b.count-a.count);
+              trs=tb.map((b,i)=>`<tr style="page-break-inside: avoid; break-inside: avoid;"><td>${i+1}</td><td>${esc(b.name)}</td><td>${esc(b.cls)}</td><td>${b.count}x</td></tr>`).join(''); }
+            else if(type==='top_books'){ title="LAPORAN BUKU TERPOPULER"; ths="<th>No</th><th>Judul Buku</th><th>Jumlah Dipinjam</th>";
+              const bc={}; appState.loans.forEach(l=>{ if(!l.BookTitle) return; bc[l.BookTitle]=(bc[l.BookTitle]||0)+1; });
+              const tb=Object.entries(bc).map(([bt,count])=>({title:bt,count})).sort((a,b)=>b.count-a.count);
+              trs=tb.map((b,i)=>`<tr style="page-break-inside: avoid; break-inside: avoid;"><td>${i+1}</td><td>${esc(b.title)}</td><td>${b.count}x</td></tr>`).join(''); }
+            html = `<div style="padding:10mm; background:white;">${getKop(title)}<style>table.r-table{width:100%; border-collapse:collapse; font-size:8pt; margin-top:5mm;} table.r-table tr{page-break-inside:avoid; break-inside: avoid;} table.r-table th, table.r-table td{border:1px solid #333; padding:2mm; text-align:left;} table.r-table th{background:#e2e8f0; font-weight:bold;} thead{display:table-header-group;}</style><table class="r-table"><thead><tr>${ths}</tr></thead><tbody>${trs||'<tr><td colspan="6" style="text-align:center;">Nihil.</td></tr>'}</tbody></table><div style="margin-top: 15mm; font-family: sans-serif; display: flex; justify-content: space-between; width: 100%; page-break-inside: avoid; break-inside: avoid;"><div style="text-align: center; width: 40%;"><p style="margin: 0; font-size: 9pt;">Mengetahui,</p><p style="margin: 0; font-size: 9pt; font-weight: bold;">Kepala Sekolah</p><div style="height: 15mm;"></div><p style="margin: 0; font-size: 9pt; font-weight: bold; text-decoration: underline;">${esc(appState.settings.principalName)}</p><p style="margin: 0; font-size: 9pt;">NIP. ${esc(appState.settings.principalNip)}</p></div><div style="text-align: center; width: 40%;"><p style="margin: 0; font-size: 9pt;">${esc(appState.settings.city)}, ${new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'})}</p><p style="margin: 0; font-size: 9pt; font-weight: bold;">Kepala Perpustakaan</p><div style="height: 15mm;"></div><p style="margin: 0; font-size: 9pt; font-weight: bold; text-decoration: underline;">${esc(appState.settings.librarianName)}</p><p style="margin: 0; font-size: 9pt;">NIP. ${esc(appState.settings.librarianNip)}</p></div></div></div>`;
           }
           
           const div = document.createElement('div'); div.innerHTML = html; document.body.appendChild(div);
