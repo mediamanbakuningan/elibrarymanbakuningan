@@ -182,9 +182,30 @@ function fileToDataURL(file) {
     r.readAsDataURL(file);
   });
 }
+async function compressImage(file, maxSide, mime, quality) {
+  if (/svg|gif/.test(file.type)) return fileToDataURL(file);
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = () => rej(new Error('Gagal membaca gambar.'));
+      i.src = url;
+    });
+    const k = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.naturalWidth * k);
+    c.height = Math.round(img.naturalHeight * k);
+    const x = c.getContext('2d');
+    if (mime === 'image/jpeg') { x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); }
+    x.drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL(mime, quality);
+  } finally { URL.revokeObjectURL(url); }
+}
 async function uploadImage(file, label) {
   if (!file) return '';
-  const dataUrl = await fileToDataURL(file);
+  const isLogo = /^logo/.test(label || '');
+  const dataUrl = await compressImage(file, isLogo ? 500 : 1200, isLogo ? 'image/png' : 'image/jpeg', 0.85);
   const res = await apiCall('upload_image', { dataUrl, filename: file.name });
   if (!res || !res.url) throw new Error('Gagal mengunggah ' + (label || 'gambar'));
   return res.url;
