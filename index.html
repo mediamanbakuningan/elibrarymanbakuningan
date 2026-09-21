@@ -15,6 +15,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -123,7 +124,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzd7tQQZy4tHkP8_0csSbrq
 
 const PX = 96 / 25.4;
 const TABS = [['dashboard','Beranda','home','BERANDA PERPUSTAKAAN'],['books','Buku','book-open','INVENTARIS BUKU'],['members','Anggota','users','DATA ANGGOTA'],['circulation','Sirkulasi','scan-line','SIRKULASI & SCAN'],['reports','Laporan','file-text','LAPORAN SISTEM'],['settings','Pengaturan','settings','PENGATURAN']];
-const KEYS = ['schoolName','address','contact','city','headmaster','librarian','logoLeft','logoRight','loanDurationDays','finePerDay','cardWidth','cardHeight'];
+const KEYS = ['schoolName','libraryName','address','contact','city','headmaster','librarian','logoLeft','logoRight','loanDurationDays','finePerDay','cardWidth','cardHeight'];
 const DEF = { loanDurationDays: 7, finePerDay: 0, cardWidth: 85.6, cardHeight: 54 };
 let appState = { activeTab:'dashboard', setupError:false, books:[], members:[], loans:[], visits:[], settings:{} };
 let scanMode = 'loan', qr = null, scanTarget = null, pvTimer = null;
@@ -405,8 +406,8 @@ function reportsHTML() {
   const btn = (id,c,txt,fn) => `<button id="${id}" onclick="${fn}" class="btn bg-${c}-700 text-white">${txt}</button>`;
   const simple = (k,ic,c,t,d) => box(ic,c,t,d,btn('btn-'+k,c,`Cetak PDF (${reportDef(k).r.length} data)`,`printReport('${k}')`));
   return `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-    ${box('credit-card','emerald','Cetak Kartu Anggota',`Ukuran kartu ${w} × ${h} mm (atur di Pengaturan), 1 halaman = 1 kartu. Hasil berupa file ZIP berisi PDF tiap anggota.`,`<select id="class-select" onchange="updateCounts()" class="inp">${opt(cls,'Semua Kelas')}</select>${btn('btn-cards','emerald','',"printReport('cards')")}`)}
-    ${box('scan-barcode','slate','Barcode Buku','Cetak stiker barcode untuk dipotong dan ditempel di buku.',`<select id="book-select" onchange="updateCounts()" class="inp">${opt(bt,'Semua Buku')}</select>${btn('btn-barcodes','slate','',"printReport('barcodes')")}`)}
+    ${box('credit-card','emerald','Cetak Kartu Anggota',`Kartu 2 sisi (depan &amp; belakang) ukuran ${w} × ${h} mm; 1 halaman = 1 sisi. Hasil berupa file ZIP berisi 1 PDF (2 halaman) per anggota.`,`<select id="class-select" onchange="updateCounts()" class="inp">${opt(cls,'Semua Kelas')}</select>${btn('btn-cards','emerald','',"printReport('cards')")}`)}
+    ${box('scan-barcode','slate','Barcode Buku','Stiker barcode bertuliskan nama sekolah &amp; perpustakaan, kertas A4 (21 stiker/halaman), tidak terpotong antar halaman.',`<select id="book-select" onchange="updateCounts()" class="inp">${opt(bt,'Semua Buku')}</select>${btn('btn-barcodes','slate','',"printReport('barcodes')")}`)}
     ${simple('activity','activity','purple','Laporan Keaktifan','Akumulasi persentase keaktifan anggota (kunjungan + pinjam buku).')}
     ${simple('available','book-open-check','green','Buku Tersedia','Daftar buku yang saat ini ada di rak dan siap dipinjam.')}
     ${simple('borrowed','arrow-left-right','orange','Buku Dipinjam','Daftar buku yang sedang dipinjam beserta jatuh tempo.')}
@@ -421,18 +422,25 @@ function updateCounts() {
 }
 
 // ---------- PDF ----------
-const a4 = f => ({ margin:8, filename:f, image:{ type:'jpeg', quality:.98 }, html2canvas:{ scale:2, useCORS:true }, jsPDF:{ unit:'mm', format:'a4', orientation:'portrait' }, pagebreak:{ mode:['css','legacy'], avoid:['tr','.stk'] } });
+const a4 = (f, m = 8) => ({ margin:m, filename:f, image:{ type:'jpeg', quality:.98 }, html2canvas:{ scale:2, useCORS:true }, jsPDF:{ unit:'mm', format:'a4', orientation:'portrait' }, pagebreak:{ mode:['css','legacy'], avoid:['tr','.stk'] } });
 const cardOpt = (w,h) => ({ margin:0, image:{ type:'jpeg', quality:.95 }, html2canvas:{ scale:3, useCORS:true }, jsPDF:{ unit:'mm', format:[w,h], orientation:w >= h ? 'landscape' : 'portrait' } });
-async function pdfWork(html, opt, blob) {
-  const run = h => { const w = html2pdf().set(opt).from(h, 'string'); return blob ? w.outputPdf('blob') : w.save(); };
-  try { return await run(html); } catch (e) { return await run(html.replace(/<img[^>]*>/g, '')); } // fallback jika gambar eksternal gagal dimuat
+function pdfChain(pages, opt, blob) {
+  const j = opt.jsPDF;
+  let w = html2pdf().set(opt).from(pages[0], 'string').toPdf();
+  for (let i = 1; i < pages.length; i++) w = w.get('pdf').then(p => p.addPage(j.format, j.orientation)).from(pages[i], 'string').toContainer().toCanvas().toPdf();
+  return blob ? w.outputPdf('blob') : w.save();
+}
+async function pdfWork(pages, opt, blob) {
+  pages = [].concat(pages); // 1 elemen = 1 halaman (kartu depan/belakang, halaman barcode)
+  try { return await pdfChain(pages, opt, blob); }
+  catch (e) { return await pdfChain(pages.map(h => h.replace(/<img[^>]*>/g, '')), opt, blob); } // fallback jika gambar eksternal gagal dimuat
 }
 function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
 function barcode(v) { const c = document.createElement('canvas'); try { JsBarcode(c, String(v), { format:'CODE128', width:2, height:50, displayValue:false, margin:0 }); } catch (e) {} return c.toDataURL('image/png'); }
 
 function kop() {
   const s = S(), im = u => u ? `<img src="${esc(u)}" crossorigin="anonymous" style="height:55px;max-width:80px;object-fit:contain">` : '<div style="width:55px"></div>';
-  return `<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px double #064e3b;padding-bottom:8px">${im(s.logoLeft)}<div style="text-align:center;flex:1"><div style="font-size:15px;font-weight:bold">${esc(s.schoolName || 'PERPUSTAKAAN SEKOLAH')}</div><div style="font-size:9px;color:#475569">${esc(s.address)}</div><div style="font-size:9px;color:#475569">${esc(s.contact)}</div></div>${im(s.logoRight)}</div>`;
+  return `<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px double #064e3b;padding-bottom:8px">${im(s.logoLeft)}<div style="text-align:center;flex:1"><div style="font-size:15px;font-weight:bold">${esc(s.schoolName || 'PERPUSTAKAAN SEKOLAH')}</div>${s.libraryName ? `<div style="font-size:11px;font-weight:bold;color:#047857">${esc(s.libraryName)}</div>` : ''}<div style="font-size:9px;color:#475569">${esc(s.address)}</div><div style="font-size:9px;color:#475569">${esc(s.contact)}</div></div>${im(s.logoRight)}</div>`;
 }
 function sign() {
   const s = S(), dots = '.....................';
@@ -442,14 +450,28 @@ function reportHTML(d) {
   const td = 'padding:5px 6px;font-size:10px;border-bottom:1px solid #e2e8f0;';
   return `<div style="font-family:Arial,sans-serif;color:#0f172a">${kop()}<h3 style="text-align:center;margin:10px 0 2px;font-size:14px;text-transform:uppercase">${esc(d.t)}</h3><p style="text-align:center;margin:0 0 10px;font-size:9px;color:#64748b">${esc(d.n)} Dicetak: ${fmtDate(new Date())}</p><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#064e3b;color:#fff">${['No',...d.c].map(c => `<th style="padding:6px;font-size:9px;text-align:left">${c}</th>`).join('')}</tr></thead><tbody>${d.r.map((r,i) => `<tr>${[i+1,...r].map((v,j) => `<td style="${td}${j===0?'text-align:center;':''}">${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>${sign()}</div>`;
 }
-const stickerHTML = b => `<div class="stk" style="width:60mm;height:30mm;border:1px dashed #94a3b8;border-radius:2mm;padding:4px 6px;font-family:Arial,sans-serif;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between"><p style="margin:0;font-size:8px;font-weight:bold;line-height:1.15;overflow:hidden;max-height:19px">${esc(b.Title)}</p><div style="text-align:center"><img src="${barcode(b.ISBN)}" style="width:90%;height:14mm"/><p style="margin:1px 0 0;font-size:7px;font-family:monospace;color:#475569">${esc(b.ISBN)}</p></div></div>`;
+// Stiker 60x36 mm, 3 kolom x 7 baris = 21 stiker per halaman A4. Tiap halaman dibuat terpisah => stiker tidak pernah terpotong antar halaman.
+const STK = { cols: 3, rows: 7 };
+function stickerHTML(b) {
+  const s = S();
+  return `<div style="width:60mm;height:36mm;flex:none;box-sizing:border-box;border:1px dashed #94a3b8;border-radius:2mm;padding:2mm 2.5mm;font-family:Arial,sans-serif;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden">
+    <div style="text-align:center;line-height:1.15;border-bottom:1px solid #cbd5e1;padding-bottom:1mm"><div style="font-size:8px;font-weight:900;text-transform:uppercase;white-space:nowrap;overflow:hidden">${esc(s.schoolName || 'NAMA SEKOLAH')}</div><div style="font-size:7px;font-weight:bold;color:#047857;white-space:nowrap;overflow:hidden">${esc(s.libraryName || 'Perpustakaan')}</div></div>
+    <div style="font-size:8px;font-weight:bold;line-height:1.2;height:2.4em;overflow:hidden;text-align:center">${esc(b.Title)}</div>
+    <div style="text-align:center"><img src="${barcode(b.ISBN)}" style="width:88%;height:11mm"/><div style="font-size:7px;font-family:monospace;color:#334155;font-weight:bold">${esc(b.ISBN)}</div></div>
+  </div>`;
+}
+function stickerPages(L) {
+  const per = STK.cols * STK.rows, pages = [];
+  for (let i = 0; i < L.length; i += per) pages.push(`<div style="width:210mm;height:290mm;box-sizing:border-box;padding:8mm 10mm;display:flex;flex-wrap:wrap;align-content:flex-start;justify-content:center;gap:3mm">${L.slice(i, i + per).map(stickerHTML).join('')}</div>`);
+  return pages;
+}
 
 async function printReport(k) {
   if (k === 'cards') return cardsZip();
   if (k === 'barcodes') {
     const L = bookList($('book-select') ? $('book-select').value : '');
     if (!L.length) return showToast('Tidak ada data buku.', true);
-    return job('Menyiapkan PDF...', () => pdfWork(`<div style="display:flex;flex-wrap:wrap;gap:4mm">${L.map(stickerHTML).join('')}</div>`, a4('Barcode_Buku.pdf')), 'PDF berhasil diunduh.');
+    return job('Menyiapkan PDF...', () => pdfWork(stickerPages(L), a4('Barcode_Buku.pdf', 0)), 'PDF berhasil diunduh.');
   }
   const d = reportDef(k);
   if (!d.r.length) return showToast('Tidak ada data untuk dicetak.', true);
@@ -458,19 +480,48 @@ async function printReport(k) {
 
 // ---------- Kartu anggota (ukuran ID, 1 halaman = 1 kartu) ----------
 function cardSize(cfg = S()) { const c = (v,d) => Math.min(210, Math.max(30, parseFloat(v) || d)); return { w:c(cfg.cardWidth, 85.6), h:c(cfg.cardHeight, 54) }; }
-function buildCard(m, cfg = S()) {
-  const { w, h } = cardSize(cfg), W = Math.round(w * PX), H = Math.round(h * PX) - 1, k = Math.min(W, H) / 204, land = W >= H;
-  const im = u => u ? `<img src="${esc(u)}" crossorigin="anonymous" style="height:2.8em;max-width:4em;object-fit:contain">` : '';
-  const pw = Math.round(land ? W * .26 : W * .4), ph = Math.round(pw * 1.25);
+if (window.qrcode && qrcode.stringToBytesFuncs) qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'];
+function qrImg(t) { try { const q = qrcode(0, 'M'); q.addData(t); q.make(); return q.createDataURL(4, 0); } catch (e) { return ''; } }
+function cardDim(cfg) { const { w, h } = cardSize(cfg), W = Math.round(w * PX), H = Math.round(h * PX) - 1; return { W, H, k: Math.min(W, H) / 204, land: W >= H }; }
+const cardShell = (d, inner) => `<div style="width:${d.W}px;height:${d.H}px;box-sizing:border-box;overflow:hidden;background:#fff;border:1px solid #064e3b;border-radius:${8 * d.k}px;font:${10 * d.k}px Arial,sans-serif;display:flex;flex-direction:column;color:#0f172a">${inner}<div style="height:.5em;flex:none;background:linear-gradient(90deg,#064e3b,#10b981,#064e3b)"></div></div>`;
+
+// ----- SISI DEPAN -----
+function cardFront(m, cfg = S()) {
+  const d = cardDim(cfg), pw = Math.round(d.land ? d.W * .26 : d.W * .4), ph = Math.round(pw * 1.25);
   const photo = esc(m.PhotoUrl) || 'https://api.dicebear.com/7.x/initials/png?seed=' + encodeURIComponent(m.Name);
-  return `<div style="width:${W}px;height:${H}px;box-sizing:border-box;overflow:hidden;background:#fff;border:1px solid #064e3b;border-radius:${8*k}px;font:${10*k}px Arial,sans-serif;display:flex;flex-direction:column;color:#0f172a">
-    <div style="background:linear-gradient(90deg,#047857,#064e3b);color:#fff;padding:.5em .8em;display:flex;align-items:center;justify-content:space-between;gap:.5em">${im(cfg.logoLeft)}<div style="text-align:center;flex:1"><div style="font-size:.9em;font-weight:bold;letter-spacing:.08em">KARTU ANGGOTA PERPUSTAKAAN</div><div style="font-size:.75em">${esc(cfg.schoolName)}</div></div>${im(cfg.logoRight)}</div>
-    <div style="flex:1;display:flex;flex-direction:${land?'row':'column'};align-items:center;justify-content:center;gap:.9em;padding:.6em .9em">
-      <img src="${photo}" crossorigin="anonymous" style="width:${pw}px;height:${ph}px;object-fit:cover;border:1px solid #cbd5e1;border-radius:4px"/>
-      <div style="flex:1;min-width:0;width:100%;text-align:${land?'left':'center'}"><div style="font-size:1.2em;font-weight:bold;line-height:1.2">${esc(m.Name)}</div><div style="font-size:.85em;color:#475569;margin:.2em 0"><b>Kelas ${esc(m.Class)}</b> • Berlaku s/d ${esc(m.ValidUntil)}</div><img src="${barcode(m.MemberID)}" style="width:100%;height:2.6em;margin-top:.3em"/><div style="font-size:.8em;font-family:monospace;font-weight:bold;color:#064e3b;text-align:center">${esc(m.MemberID)}</div></div>
-    </div></div>`;
+  const logo = cfg.logoRight || cfg.logoLeft;
+  const row = (l, v) => `<tr><td style="padding:0 .3em .25em 0;width:3.8em;vertical-align:top">${l}</td><td style="padding:0 .3em .25em 0;vertical-align:top">:</td><td style="padding:0 0 .25em;font-weight:900;word-break:break-word">${esc(v)}</td></tr>`;
+  return cardShell(d, `
+    <div style="background:#059669;color:#fff;display:flex;align-items:center;gap:.6em;padding:.6em .8em;flex:none">
+      ${logo ? `<div style="width:2.8em;height:2.8em;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none"><img src="${esc(logo)}" crossorigin="anonymous" style="width:2.2em;height:2.2em;object-fit:contain"/></div>` : ''}
+      <div style="line-height:1.15;min-width:0"><div style="font-size:.95em;font-weight:900">${esc(cfg.schoolName)}</div><div style="font-size:.6em;opacity:.9">${esc(cfg.libraryName || cfg.address)}</div></div>
+    </div>
+    <div style="text-align:center;font-size:.85em;font-weight:900;color:#064e3b;margin:.5em .9em 0;padding-bottom:.2em;border-bottom:1px solid #a7f3d0;flex:none">KARTU ANGGOTA PERPUSTAKAAN</div>
+    <div style="flex:1;display:flex;flex-direction:${d.land ? 'row' : 'column'};align-items:center;justify-content:center;gap:.8em;padding:.4em .9em">
+      <img src="${photo}" crossorigin="anonymous" style="width:${pw}px;height:${ph}px;object-fit:cover;border:2px solid #e2e8f0;border-radius:4px;flex:none"/>
+      <div style="flex:1;min-width:0;width:100%">
+        <table style="border-collapse:collapse;font-size:.68em;font-weight:800;line-height:1.3;color:#1e293b">${row('NAMA', m.Name)}${row('NISN', m.MemberID)}${row('KELAS', m.Class)}${row('BERLAKU', m.ValidUntil)}</table>
+        <img src="${barcode(m.MemberID)}" style="display:block;width:100%;height:2.4em;margin-top:.2em"/>
+        <div style="font-size:.7em;font-family:monospace;font-weight:bold;color:#064e3b;text-align:center">${esc(m.MemberID)}</div>
+      </div>
+    </div>`);
 }
-const cardBlob = m => { const { w, h } = cardSize(); return pdfWork(`<div>${buildCard(m)}</div>`, cardOpt(w, h), true); };
+
+// ----- SISI BELAKANG: tata tertib + QR tanda tangan Kepala Perpustakaan & Kepala Sekolah -----
+function cardBack(m, cfg = S()) {
+  const d = cardDim(cfg);
+  const rules = ['Kartu ini wajib dibawa setiap kali melakukan peminjaman atau pengembalian buku.', 'Keterlambatan pengembalian buku akan dikenakan denda sesuai ketentuan yang berlaku.', 'Kerusakan atau kehilangan buku yang dipinjam sepenuhnya menjadi tanggung jawab peminjam.', 'Kartu anggota ini tidak boleh dipinjamkan atau digunakan oleh orang lain.'];
+  const sg = (role, name) => { const q = qrImg('Ttd ' + role + ': ' + (name || '-') + ' | ' + (cfg.schoolName || '')); return `<div style="text-align:center;font-size:.6em;font-weight:800;display:flex;flex-direction:column;align-items:center"><div>${role}</div>${q ? `<img src="${q}" style="width:4.4em;height:4.4em;margin:.2em 0"/>` : '<div style="height:4.4em"></div>'}<div style="text-decoration:underline">${esc(name || '..................')}</div></div>`; };
+  return cardShell(d, `
+    <div style="background:#059669;color:#fff;text-align:center;padding:.7em .8em;font-size:.9em;font-weight:900;letter-spacing:.05em;flex:none">TATA TERTIB PERPUSTAKAAN</div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;padding:.5em .9em .4em">
+      <div>${rules.map((r, i) => `<div style="font-size:.62em;font-weight:600;line-height:1.35;margin-bottom:.2em;color:#1e293b">${i + 1}. ${r}</div>`).join('')}</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;padding:0 .4em">${sg('Kepala Perpustakaan', cfg.librarian)}${sg('Kepala Sekolah', cfg.headmaster)}</div>
+    </div>`);
+}
+// 1 file PDF per anggota = 2 halaman (depan, belakang), ukuran halaman = ukuran kartu
+const cardBlob = m => { const { w, h } = cardSize(); return pdfWork([`<div>${cardFront(m)}</div>`, `<div>${cardBack(m)}</div>`], cardOpt(w, h), true); };
+
 function printCard(id) {
   const m = mem(id); if (!m.ID) return showToast('Anggota tidak ditemukan.', true);
   job('Membuat kartu...', async () => download(await cardBlob(m), 'Kartu_' + safe(m.Name) + '.pdf'), 'Kartu diunduh.');
@@ -493,9 +544,9 @@ function settingsHTML() {
   const f = (k,l,t='text',ph='',ex='') => `<div><label class="lbl">${l}</label><input id="set-${k}" type="${t}" placeholder="${ph}" ${ex} class="inp"/></div>`;
   const sec = (ic,t,d,body) => `<div class="card"><h3 class="font-black text-slate-800 text-lg flex items-center gap-2"><i data-lucide="${ic}" class="w-5 h-5 text-emerald-600"></i> ${t}</h3><p class="text-xs text-slate-400 font-bold mb-5">${d}</p>${body}</div>`;
   return `<form onsubmit="submitSettings(event)" oninput="schedulePreview()" class="max-w-3xl mx-auto space-y-4 md:space-y-6">
-    ${sec('building-2','Profil Instansi','Dipakai pada kartu anggota dan kop semua laporan cetak.',`<div class="space-y-4">${f('schoolName','Nama Perpustakaan / Sekolah')}${f('address','Alamat')}<div class="grid grid-cols-2 gap-4">${f('contact','Telepon / Email')}${f('city','Kota (tanda tangan laporan)')}</div><div class="grid grid-cols-2 gap-4">${f('headmaster','Nama Kepala Sekolah')}${f('librarian','Nama Petugas Perpustakaan')}</div><div class="grid grid-cols-2 gap-4">${f('logoLeft','Logo Kiri (URL)','text','https://...')}${f('logoRight','Logo Kanan (URL)','text','https://...')}</div></div>`)}
+    ${sec('building-2','Profil Instansi','Dipakai pada kartu anggota dan kop semua laporan cetak.',`<div class="space-y-4">${f('schoolName','Nama Sekolah')}${f('libraryName','Nama Perpustakaan')}${f('address','Alamat')}<div class="grid grid-cols-2 gap-4">${f('contact','Telepon / Email')}${f('city','Kota (tanda tangan laporan)')}</div><div class="grid grid-cols-2 gap-4">${f('headmaster','Nama Kepala Sekolah')}${f('librarian','Nama Petugas Perpustakaan')}</div><div class="grid grid-cols-2 gap-4">${f('logoLeft','Logo Kiri (URL)','text','https://...')}${f('logoRight','Logo Kanan (URL)','text','https://...')}</div></div>`)}
     ${sec('repeat','Pengaturan Pinjaman','Aturan durasi peminjaman dan denda keterlambatan.',`<div class="grid grid-cols-2 gap-4">${f('loanDurationDays','Durasi Pinjam (Hari)','number','','min="1"')}${f('finePerDay','Denda / Hari (Rp)','number','','min="0"')}</div>`)}
-    ${sec('credit-card','Pengaturan Cetak Kartu','Kartu dicetak 1 halaman = 1 kartu seukuran ID. Banyak kartu diunduh sebagai ZIP.',`<div class="grid md:grid-cols-2 gap-6"><div class="space-y-4"><div><label class="lbl">Preset Ukuran</label><select id="set-preset" onchange="applyPreset()" class="inp"><option value="85.6x54">ID Card Landscape — 85,6 × 54 mm</option><option value="54x85.6">ID Card Portrait — 54 × 85,6 mm</option><option value="custom">Kustom</option></select></div><div class="grid grid-cols-2 gap-4">${f('cardWidth','Lebar (mm)','number','','min="30" max="210" step="0.1"')}${f('cardHeight','Tinggi (mm)','number','','min="30" max="210" step="0.1"')}</div></div><div><label class="lbl">Pratinjau (data contoh)</label><div id="card-preview" class="mt-1 overflow-auto p-2 bg-slate-50 rounded-xl border flex justify-center"></div></div></div>`)}
+    ${sec('credit-card','Pengaturan Cetak Kartu','Kartu 2 sisi (depan &amp; belakang): 1 halaman = 1 sisi seukuran ID. Banyak kartu diunduh sebagai ZIP.',`<div class="grid md:grid-cols-2 gap-6"><div class="space-y-4"><div><label class="lbl">Preset Ukuran</label><select id="set-preset" onchange="applyPreset()" class="inp"><option value="85.6x54">ID Card Landscape — 85,6 × 54 mm</option><option value="54x85.6">ID Card Portrait — 54 × 85,6 mm</option><option value="custom">Kustom</option></select></div><div class="grid grid-cols-2 gap-4">${f('cardWidth','Lebar (mm)','number','','min="30" max="210" step="0.1"')}${f('cardHeight','Tinggi (mm)','number','','min="30" max="210" step="0.1"')}</div></div><div><label class="lbl">Pratinjau (data contoh)</label><div id="card-preview" class="mt-1 overflow-auto p-2 bg-slate-50 rounded-xl border flex flex-wrap justify-center gap-3"></div></div></div>`)}
     <button class="btn platinum-gradient w-full py-4 tracking-widest">SIMPAN PENGATURAN</button></form>`;
 }
 const formSettings = () => { const o = {}; KEYS.forEach(k => { const e = $('set-' + k); o[k] = e ? e.value.trim() : ''; }); return o; };
@@ -512,7 +563,7 @@ function applyPreset() {
 function schedulePreview() { clearTimeout(pvTimer); pvTimer = setTimeout(refreshPreview, 300); }
 function refreshPreview() {
   const el = $('card-preview'); if (!el) return;
-  el.innerHTML = buildCard({ Name:'Nama Siswa Contoh', Class:'7A', ValidUntil:'Juli 2027', MemberID:'0012345678' }, formSettings());
+  const m = { Name:'Nama Siswa Contoh', Class:'7A', ValidUntil:'Juli 2027', MemberID:'0012345678' }, c = formSettings(); el.innerHTML = cardFront(m, c) + cardBack(m, c);
 }
 async function submitSettings(e) {
   e.preventDefault();
