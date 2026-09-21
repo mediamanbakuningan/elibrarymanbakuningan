@@ -1,8 +1,8 @@
 {
   "id": "./index.html",
-  "name": "E-LIBRARY — Sistem Perpustakaan Digital Sekolah",
+  "name": "E-LIBRARY — Perpustakaan Digital Manbaul Huda",
   "short_name": "E-LIBRARY",
-  "description": "Sistem Informasi Perpustakaan Sekolah (SI-PUS) — sirkulasi, scan masuk, laporan, dan statistik keaktifan anggota.",
+  "description": "Perpustakaan Digital Manbaul Huda",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
