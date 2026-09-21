@@ -54,11 +54,11 @@
 
   <div class="flex app-viewport overflow-hidden pb-20 lg:pb-0">
     <aside class="w-72 glass-panel hidden lg:flex flex-col p-6 m-4 rounded-3xl z-10 shadow-lg">
-      <div class="flex items-center gap-3 mb-10 px-2"><div class="platinum-gradient p-3 rounded-2xl shadow-lg"><i class="text-white w-6 h-6" data-lucide="library"></i></div><div><h1 class="font-black text-2xl metallic-text tracking-tighter">E-LIBRARY</h1><p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Sekolah Digital</p></div></div>
+      <div class="flex items-center gap-3 mb-10 px-2"><div class="platinum-gradient p-3 rounded-2xl shadow-lg"><i class="text-white w-6 h-6" data-lucide="library"></i></div><div><h1 class="font-black text-2xl metallic-text tracking-tighter">E-LIBRARY</h1><p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">@2026 made by Albustomipauzi</p></div></div>
       <nav id="sidebar-nav" class="flex-1 space-y-2"></nav>
       <div class="mt-auto p-4 bg-white/40 rounded-2xl flex flex-col items-center gap-2 border border-white/50">
         <button id="btn-install" class="hide w-full platinum-gradient px-4 py-2.5 rounded-xl font-black text-xs shadow-lg" onclick="installApp()"><i data-lucide="download" class="w-4 h-4 inline"></i> Install Aplikasi</button>
-        <p class="text-[8px] text-slate-500 font-bold text-center mt-2">@2026 made by Albustomipauzi</p>
+        <p class="text-[8px] text-slate-500 font-bold text-center mt-2">"menulis, membaca, maka aku ada"</p>
       </div>
     </aside>
 
@@ -546,8 +546,8 @@ function reportsHTML() {
   const btn = (id,c,txt,fn) => `<button id="${id}" onclick="${fn}" class="btn bg-${c}-700 text-white">${txt}</button>`;
   const simple = (k,ic,c,t,d) => box(ic,c,t,d,btn('btn-'+k,c,`Cetak PDF (${reportDef(k).r.length} data)`,`printReport('${k}')`));
   return `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-    ${box('credit-card','emerald','Cetak Kartu Anggota',`Kartu 2 sisi (depan &amp; belakang) ukuran ${w} × ${h} mm; 1 halaman = 1 sisi. Hasil berupa file ZIP berisi 1 PDF (2 halaman) per anggota.`,`<select id="class-select" onchange="updateCounts()" class="inp">${opt(cls,'Semua Kelas')}</select>${btn('btn-cards','emerald','',"printReport('cards')")}`)}
-    ${box('scan-barcode','slate','Barcode Buku','Stiker barcode bertuliskan nama sekolah &amp; perpustakaan, kertas A4, kop laporan disertakan di setiap halaman, tidak terpotong antar halaman.',`<select id="book-select" onchange="updateCounts()" class="inp">${opt(bt,'Semua Buku')}</select>${btn('btn-barcodes','slate','',"printReport('barcodes')")}`)}
+    ${box('credit-card','emerald','Cetak Kartu Anggota',`Hasil berupa file ZIP berisi 1 PDF (2 halaman) per anggota.`,`<select id="class-select" onchange="updateCounts()" class="inp">${opt(cls,'Semua Kelas')}</select>${btn('btn-cards','emerald','',"printReport('cards')")}`)}
+    ${box('scan-barcode','slate','Barcode Buku','Stiker barcode bertuliskan nama sekolah &amp; perpustakaan, kertas A4',`<select id="book-select" onchange="updateCounts()" class="inp">${opt(bt,'Semua Buku')}</select>${btn('btn-barcodes','slate','',"printReport('barcodes')")}`)}
     ${simple('activity','activity','purple','Laporan Keaktifan','Akumulasi persentase keaktifan anggota (kunjungan + pinjam buku).')}
     ${simple('available','book-open-check','green','Buku Tersedia','Daftar buku yang saat ini ada di rak dan siap dipinjam.')}
     ${simple('borrowed','arrow-left-right','orange','Buku Dipinjam','Daftar buku yang sedang dipinjam beserta jatuh tempo.')}
