@@ -759,7 +759,7 @@ function updateCounts() {
 }
 
 // ---------- PDF ----------
-const a4 = (f, m = 2) => ({ margin:m, filename:f, image:{ type:'jpeg', quality:.98 }, html2canvas:{ scale:2, useCORS:true }, jsPDF:{ unit:'mm', format:'a4', orientation:'portrait' }, pagebreak:{ mode:['css','legacy'], avoid:['tr','.stk'] } });
+const a4 = (f, m = 8) => ({ margin:m, filename:f, image:{ type:'jpeg', quality:.98 }, html2canvas:{ scale:2, useCORS:true }, jsPDF:{ unit:'mm', format:'a4', orientation:'portrait' }, pagebreak:{ mode:['css','legacy'], avoid:['tr','.stk'] } });
 const cardOpt = (w,h) => ({ margin:0, image:{ type:'jpeg', quality:.95 }, html2canvas:{ scale:3, useCORS:true }, jsPDF:{ unit:'mm', format:[w,h], orientation:w >= h ? 'landscape' : 'portrait' } });
 function pdfChain(pages, opt, blob) {
   const j = opt.jsPDF;
