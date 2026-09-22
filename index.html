@@ -834,7 +834,7 @@ function bottomBarGradient(cfg) {
   const list = colors.length ? colors : DEF.cardBottomColors.split(',');
   return `linear-gradient(90deg,${list.join(',')})`;
 }
-const cardShell = (d, inner, bgUrl, bgOpacity, font, cfg) => `<div style="position:relative;width:${d.W}px;height:${d.H}px;box-sizing:border-box;overflow:hidden;background:#fff;border:1px solid #064e3b;border-radius:${8 * d.k}px;font:${10 * d.k}px ${font || DEF.cardFont};color:#0f172a">${cardBgLayer(bgUrl,bgOpacity)}<div style="position:relative;z-index:1;width:100%;height:100%;display:flex;flex-direction:column">${inner}<div style="height:.5em;flex:none;background:${bottomBarGradient(cfg || {})}"></div></div></div>`;
+const cardShell = (d, inner, bgUrl, bgOpacity, font, cfg) => `<div style="position:relative;width:${d.W}px;height:${d.H}px;box-sizing:border-box;overflow:hidden;background:#fff;border:1px solid #064e3b;border-radius:0;font:${10 * d.k}px ${font || DEF.cardFont};color:#0f172a">${cardBgLayer(bgUrl,bgOpacity)}<div style="position:relative;z-index:1;width:100%;height:100%;display:flex;flex-direction:column">${inner}<div style="height:.5em;flex:none;background:${bottomBarGradient(cfg || {})}"></div></div></div>`;
 
 // ----- SISI DEPAN -----
 function cardFront(m, cfg = S()) {
@@ -845,7 +845,7 @@ function cardFront(m, cfg = S()) {
   const kopLines = [cfg.libraryName, cfg.address, cfg.contact].filter(Boolean).map(x => `<div style="font-size:.55em;opacity:.9;line-height:1.25">${esc(x)}</div>`).join('');
   return cardShell(d, `
     <div style="background:${headerColor};color:#fff;display:flex;align-items:center;gap:.6em;padding:.6em .8em;flex:none">
-      ${logo ? `<div style="width:2.8em;height:2.8em;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none"><img src="${esc(logo)}" crossorigin="anonymous" style="width:2.2em;height:2.2em;object-fit:contain"/></div>` : ''}
+      ${logo ? `<div style="width:2.8em;height:2.8em;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none"><img src="${esc(logo)}" crossorigin="anonymous" style="width:2.8em;height:2.8em;object-fit:contain"/></div>` : ''}
       <div style="line-height:1.15;min-width:0"><div style="font-size:.95em;font-weight:900">${esc(cfg.schoolName)}</div>${kopLines}</div>
     </div>
     <div style="text-align:center;font-size:.85em;font-weight:900;color:#064e3b;margin:.5em .9em 0;padding-bottom:.2em;border-bottom:1px solid #a7f3d0;flex:none">KARTU ANGGOTA PERPUSTAKAAN</div>
