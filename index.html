@@ -806,7 +806,7 @@ function sign() {
 }
 
 // Setiap halaman laporan dibuat sebagai elemen PDF terpisah (kop selalu ikut di setiap halaman)
-const ROWS_PER_PAGE = 24;
+const ROWS_PER_PAGE = 27;
 function reportPages(d) {
   const chunks = []; for (let i = 0; i < d.r.length; i += ROWS_PER_PAGE) chunks.push(d.r.slice(i, i + ROWS_PER_PAGE));
   if (!chunks.length) chunks.push([]);
