@@ -117,9 +117,42 @@
             <img id="member-photo-preview" src="" class="hide w-16 h-16 rounded-xl object-cover border bg-slate-100"/>
             <input id="member-photo-file" type="file" accept="image/*" class="inp" onchange="previewMemberPhoto(event)"/>
           </div>
-          <p class="text-[9px] text-slate-400 font-bold mt-1">Foto akan diunggah otomatis ke folder Drive BG_IMAGE_ELIBRARY saat data disimpan.</p>
+          <p class="text-[9px] text-slate-400 font-bold mt-1">Foto akan diunggah otomatis ke folder Drive ASSETS_ELIBRARY/Photo Profile (nama file: PP_KELAS_NAMA) saat data disimpan.</p>
         </div>
         <div class="flex gap-4 pt-2"><button type="button" onclick="toggleModal('modal-member',false)" class="flex-1 font-bold text-slate-500 hover:bg-white/50 rounded-xl py-3">Batal</button><button class="btn platinum-gradient flex-[2]">Simpan</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL E-BOOK -->
+  <div id="modal-ebook" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[400] flex items-center justify-center p-4 hide">
+    <div class="glass-panel w-full max-w-lg rounded-[2rem] p-6 md:p-10 shadow-2xl max-h-full overflow-y-auto">
+      <h3 id="ebook-modal-title" class="text-2xl font-black mb-6 text-emerald-800">Tambah E-Book</h3>
+      <form id="form-ebook" class="space-y-4" onsubmit="submitEbook(event)">
+        <input type="hidden" id="ebook-edit-id" value=""/>
+        <input type="hidden" id="ebook-cover-url" value=""/>
+        <input type="hidden" id="ebook-pdf-url" value=""/>
+        <input type="hidden" id="ebook-pdf-id" value=""/>
+        <div class="grid grid-cols-2 gap-4">
+          <div><label class="lbl">Kode E-Book</label><input id="ebook-code" required placeholder="Misal: EB-001" class="inp"/></div>
+          <div><label class="lbl">Kategori</label><select id="ebook-category" class="inp"></select></div>
+        </div>
+        <div><label class="lbl">Judul E-Book</label><input id="ebook-title" required class="inp"/></div>
+        <div><label class="lbl">Penulis</label><input id="ebook-author" class="inp"/></div>
+        <div>
+          <label class="lbl">Cover E-Book (Opsional)</label>
+          <div class="flex items-center gap-3 mt-1">
+            <img id="ebook-cover-preview" src="" class="hide w-14 h-20 rounded-lg object-cover border bg-slate-100"/>
+            <input id="ebook-cover-file" type="file" accept="image/*" class="inp" onchange="previewEbookCover(event)"/>
+          </div>
+          <p class="text-[9px] text-slate-400 font-bold mt-1">Tersimpan di EBOOK/COVER EBOOK, nama file: CB_KODE.</p>
+        </div>
+        <div>
+          <label class="lbl">File PDF E-Book</label>
+          <input id="ebook-pdf-file" type="file" accept="application/pdf" class="inp"/>
+          <p class="text-[9px] text-slate-400 font-bold mt-1">Tersimpan di EBOOK/PDF EBOOK, nama file: KODE_JUDUL. Saat edit, kosongkan jika tidak ingin mengganti file PDF.</p>
+        </div>
+        <div class="flex gap-4 pt-2"><button type="button" onclick="toggleModal('modal-ebook',false)" class="flex-1 font-bold text-slate-500 hover:bg-white/50 rounded-xl py-3">Batal</button><button class="btn platinum-gradient flex-[2]">Simpan E-Book</button></div>
       </form>
     </div>
   </div>
@@ -132,10 +165,10 @@
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzd7tQQZy4tHkP8_0csSbrqLARbzqHoS6LDPJg_KZHmNioc6XT6DbxzOhBSnfFMl4sQnQ/exec";
 
 const PX = 96 / 25.4;
-const TABS = [['dashboard','Beranda','home','BERANDA PERPUSTAKAAN'],['books','Buku','book-open','INVENTARIS BUKU'],['members','Anggota','users','DATA ANGGOTA'],['circulation','Sirkulasi','scan-line','SIRKULASI & SCAN'],['reports','Laporan','file-text','LAPORAN SISTEM'],['settings','Pengaturan','settings','PENGATURAN']];
+const TABS = [['dashboard','Beranda','home','BERANDA PERPUSTAKAAN'],['books','Buku','book-open','INVENTARIS BUKU'],['ebooks','E-Book','book-marked','PERPUSTAKAAN DIGITAL (E-BOOK)'],['members','Anggota','users','DATA ANGGOTA'],['circulation','Sirkulasi','scan-line','SIRKULASI & SCAN'],['reports','Laporan','file-text','LAPORAN SISTEM'],['settings','Pengaturan','settings','PENGATURAN']];
 const KEYS = ['schoolName','libraryName','address','contact','city','headmaster','librarian','logoLeft','logoRight','loanDurationDays','finePerDay','cardWidth','cardHeight','bookCategories','cardBgFront','cardBgBack','cardBgOpacity'];
 const DEF = { loanDurationDays: 7, finePerDay: 0, cardWidth: 85.6, cardHeight: 54, bookCategories: 'Pendidikan,Sains,Novel,Sejarah,Referensi', cardBgOpacity: 20 };
-let appState = { activeTab:'dashboard', setupError:false, books:[], members:[], loans:[], visits:[], settings:{} };
+let appState = { activeTab:'dashboard', setupError:false, books:[], members:[], loans:[], visits:[], ebooks:[], settings:{} };
 let scanMode = 'loan', qr = null, scanTarget = null, pvTimer = null, uploadPrivate = false;
 
 const $ = id => document.getElementById(id);
@@ -181,7 +214,7 @@ async function apiCall(action, payload = {}, extra = {}) {
   catch (err) { console.error(err); showToast(err.message || 'Gagal menghubungi server', true); return null; }
 }
 
-// ---------- Upload gambar (logo / background / foto anggota) -> folder Drive BG_IMAGE_ELIBRARY ----------
+// ---------- Upload gambar/PDF -> folder Drive ASSETS_ELIBRARY / EBOOK (terstruktur per jenis) ----------
 function fileToDataURL(file) {
   return new Promise((res, rej) => {
     const r = new FileReader();
@@ -210,19 +243,26 @@ async function compressImage(file, maxSide, mime, quality) {
     return c.toDataURL(mime, quality);
   } finally { URL.revokeObjectURL(url); }
 }
-async function uploadImage(file, label) {
+// extra.type menentukan folder & format nama file di Drive (lihat resolveUploadTarget di Code.gs):
+//   member_photo (kelas, nama) -> ASSETS_ELIBRARY/Photo Profile/PP_KELAS_NAMA
+//   logo_left / logo_right     -> ASSETS_ELIBRARY/Logo Sekolah/LOGO_KIRI atau LOGO_KANAN
+//   card_bg_front / card_bg_back -> ASSETS_ELIBRARY/Background Kartu/BK_DEPAN atau BK_BELAKANG
+//   ebook_cover (kode)         -> EBOOK/COVER EBOOK/CB_KODE
+//   ebook_pdf (kode, nama)     -> EBOOK/PDF EBOOK/KODE_NAMA
+async function uploadImage(file, label, extra = {}) {
   if (!file) return '';
+  const isPdf = file.type === 'application/pdf';
   const isLogo = /^logo/.test(label || '');
-  const dataUrl = await compressImage(file, isLogo ? 500 : 1200, isLogo ? 'image/png' : 'image/jpeg', 0.85);
-  const res = await apiPost('upload_image', { dataUrl, filename: file.name }); // error asli server ikut terlempar
-  if (!res || !res.url) throw new Error('Gagal mengunggah ' + (label || 'gambar') + ': server tidak mengembalikan URL.');
+  const dataUrl = isPdf ? await fileToDataURL(file) : await compressImage(file, isLogo ? 500 : 1200, isLogo ? 'image/png' : 'image/jpeg', 0.85);
+  const res = await apiPost('upload_file', { dataUrl, filename: file.name, ...extra }); // error asli server ikut terlempar
+  if (!res || !res.url) throw new Error('Gagal mengunggah ' + (label || 'file') + ': server tidak mengembalikan URL.');
   if (res.shared === false) uploadPrivate = true;
   return res.url;
 }
 function warnIfPrivate() {
   if (!uploadPrivate) return;
   uploadPrivate = false;
-  Swal.fire({ icon:'warning', title:'Gambar tersimpan, tapi belum publik', text:'Gambar sudah masuk folder BG_IMAGE_ELIBRARY, namun kebijakan Google Workspace menolak berbagi link publik sehingga gambar bisa tidak tampil di kartu/PDF. Buka folder itu di Drive lalu atur berbagi ke "Siapa saja yang memiliki link" (Viewer).' });
+  Swal.fire({ icon:'warning', title:'File tersimpan, tapi belum publik', text:'File sudah masuk folder ASSETS_ELIBRARY / EBOOK di Drive, namun kebijakan Google Workspace menolak berbagi link publik sehingga file bisa tidak tampil/terbuka. Buka folder itu di Drive lalu atur berbagi ke "Siapa saja yang memiliki link" (Viewer).' });
 }
 
 async function initApp() {
@@ -232,7 +272,7 @@ async function initApp() {
     const res = await apiCall('get_all_data');
     if (res && res.data) {
       appState.setupError = false;
-      ['books','members','loans','visits'].forEach(k => appState[k] = res.data[k] || []);
+      ['books','members','loans','visits','ebooks'].forEach(k => appState[k] = res.data[k] || []);
       appState.settings = res.data.settings || {};
     } else appState.setupError = true;
   } catch (e) { appState.setupError = true; }
@@ -290,7 +330,7 @@ function switchTab(id) {
   renderView();
 }
 function renderView() {
-  const V = { dashboard:dashHTML, books:booksHTML, members:membersHTML, circulation:circHTML, reports:reportsHTML, settings:settingsHTML };
+  const V = { dashboard:dashHTML, books:booksHTML, ebooks:ebooksHTML, members:membersHTML, circulation:circHTML, reports:reportsHTML, settings:settingsHTML };
   const t = appState.activeTab;
   $('app-content').innerHTML = (appState.setupError ? errHTML : (V[t] || dashHTML))();
   if (!appState.setupError) {
@@ -324,7 +364,7 @@ function dashHTML() {
   const overdue = l.filter(x => x.Status === 'borrowed' && late(x) > 0).length;
   const paid = l.filter(x => x.FinePaid === 'lunas').reduce((s,x) => s + N(x.Fine), 0);
   const unpaidL = l.filter(x => x.FinePaid === 'belum'), unpaid = unpaidL.reduce((s,x) => s + N(x.Fine), 0);
-  const cards = [['library','Total Buku',b.length,'emerald'],['arrow-left-right','Dipinjam',borrowed,'orange'],['check-circle-2','Tersedia',avail,'green'],['alarm-clock','Terlambat',overdue,'red'],['users','Anggota',A.members.length,'blue'],['door-open','Masuk Hari Ini',vt,'purple'],['footprints','Total Kunjungan',A.visits.length,'purple'],['repeat','Total Transaksi',l.length,'slate'],['wallet','Denda Terkumpul',rp(paid),'green'],['alert-triangle','Denda Belum Lunas',rp(unpaid),'red']];
+  const cards = [['library','Total Buku',b.length,'emerald'],['book-marked','Total E-Book',A.ebooks.length,'teal'],['arrow-left-right','Dipinjam',borrowed,'orange'],['check-circle-2','Tersedia',avail,'green'],['alarm-clock','Terlambat',overdue,'red'],['users','Anggota',A.members.length,'blue'],['door-open','Masuk Hari Ini',vt,'purple'],['footprints','Total Kunjungan',A.visits.length,'purple'],['repeat','Total Transaksi',l.length,'slate'],['wallet','Denda Terkumpul',rp(paid),'green'],['alert-triangle','Denda Belum Lunas',rp(unpaid),'red']];
   const act = getActivity(10).rows;
   const cnt = {}; l.forEach(x => { if (x.BookTitle) cnt[x.BookTitle] = (cnt[x.BookTitle] || 0) + 1; });
   const top = Object.entries(cnt).sort((a,b) => b[1] - a[1]).slice(0,10), mx = top.length ? top[0][1] : 1;
@@ -447,12 +487,13 @@ async function submitMember(e) {
   const editId = $('member-edit-id').value;
   const file = $('member-photo-file').files[0];
   let photoUrl = $('member-photo-url').value;
+  const memberClass = $('member-class').value.trim(), memberName = $('member-name').value.trim();
   if (file) {
     showLoader(true, 'Mengunggah foto ke Drive...');
-    try { photoUrl = await uploadImage(file, 'foto anggota'); }
+    try { photoUrl = await uploadImage(file, 'foto anggota', { type:'member_photo', kelas:memberClass, nama:memberName }); }
     catch (err) { showLoader(false); return showToast(err.message, true); }
   }
-  const p = { memberId:$('member-id').value.trim(), name:$('member-name').value.trim(), class:$('member-class').value.trim(), validUntil:$('member-valid').value.trim(), photoUrl };
+  const p = { memberId:$('member-id').value.trim(), name:memberName, class:memberClass, validUntil:$('member-valid').value.trim(), photoUrl };
   showLoader(true, editId ? 'Memperbarui anggota...' : 'Mendaftarkan anggota...');
   const res = editId ? await apiCall('update_member', { id: editId, ...p }) : await apiCall('add_member', p);
   if (res) { toggleModal('modal-member', false); $('form-member').reset(); $('member-id').disabled = false; await refresh(res.message); warnIfPrivate(); } else showLoader(false);
@@ -480,6 +521,60 @@ async function deleteItem(sheet, id) {
   showLoader(true, 'Menghapus...');
   const res = await apiCall('delete_item', {}, { sheet, id });
   if (res) await refresh(res.message); else showLoader(false);
+}
+
+// ---------- E-Book ----------
+function ebooksHTML() {
+  const cards = appState.ebooks.map(bk => `<div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden hover:border-emerald-500 transition flex flex-col"><div class="aspect-[3/4] bg-slate-100 overflow-hidden"><img src="${esc(bk.CoverUrl) || 'https://api.dicebear.com/7.x/shapes/svg?seed=' + encodeURIComponent(bk.Title || bk.Code)}" class="w-full h-full object-cover" onerror="this.src='https://api.dicebear.com/7.x/shapes/svg?seed=Err'"/></div><div class="p-3 flex-1 flex flex-col"><p class="font-black text-slate-800 text-xs md:text-sm line-clamp-2">${esc(bk.Title)}</p><p class="text-[9px] text-slate-500 font-bold uppercase truncate mt-0.5">${esc(bk.Author) || '-'} • ${esc(bk.Category)}</p><p class="text-[9px] font-mono text-emerald-700 font-bold mt-1">${esc(bk.Code)}</p><div class="flex gap-1 mt-auto pt-2">${bk.PdfUrl ? `<a href="${esc(bk.PdfUrl)}" target="_blank" rel="noopener" class="flex-1 text-center text-[10px] font-black bg-emerald-700 text-white px-2 py-2 rounded-lg hover:bg-emerald-800">Baca</a>` : `<span class="flex-1 text-center text-[10px] font-bold text-slate-400 px-2 py-2">Belum ada PDF</span>`}<button onclick="openEbookModal('${esc(bk.ID)}')" title="Edit" class="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-800 hover:text-white transition"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="deleteItem('Ebooks','${esc(bk.ID)}')" title="Hapus" class="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div></div>`).join('') || `<div class="col-span-full text-center py-10 text-slate-400 font-bold text-sm">Belum ada E-Book.</div>`;
+  return `<div class="card"><div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4"><h3 class="font-black text-slate-800 text-lg md:text-xl w-full">Perpustakaan Digital (E-Book)</h3><button onclick="openEbookModal()" class="btn bg-emerald-800 text-white flex items-center gap-2 justify-center"><i data-lucide="plus" class="w-5 h-5"></i> Tambah E-Book</button></div><div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">${cards}</div></div>`;
+}
+function previewEbookCover(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const img = $('ebook-cover-preview'), reader = new FileReader();
+  reader.onload = () => { img.src = reader.result; img.classList.remove('hide'); };
+  reader.readAsDataURL(f);
+}
+function openEbookModal(id) {
+  const editing = !!id;
+  $('ebook-modal-title').innerText = editing ? 'Edit E-Book' : 'Tambah E-Book';
+  $('ebook-edit-id').value = id || '';
+  const cats = getCategories();
+  $('ebook-category').innerHTML = cats.map(c => `<option>${esc(c)}</option>`).join('') || '<option>Umum</option>';
+  $('form-ebook').reset();
+  $('ebook-cover-url').value = ''; $('ebook-pdf-url').value = ''; $('ebook-pdf-id').value = '';
+  $('ebook-cover-preview').src = ''; $('ebook-cover-preview').classList.add('hide');
+  $('ebook-code').disabled = false;
+  if (editing) {
+    const bk = appState.ebooks.find(x => x.ID === id);
+    if (!bk) return showToast('E-Book tidak ditemukan.', true);
+    $('ebook-code').value = bk.Code; $('ebook-code').disabled = true;
+    $('ebook-title').value = bk.Title; $('ebook-author').value = bk.Author;
+    if (cats.includes(bk.Category)) $('ebook-category').value = bk.Category;
+    $('ebook-cover-url').value = bk.CoverUrl || ''; $('ebook-pdf-url').value = bk.PdfUrl || ''; $('ebook-pdf-id').value = bk.PdfFileId || '';
+    if (bk.CoverUrl) { $('ebook-cover-preview').src = bk.CoverUrl; $('ebook-cover-preview').classList.remove('hide'); }
+  }
+  toggleModal('modal-ebook', true);
+}
+async function submitEbook(e) {
+  e.preventDefault();
+  const editId = $('ebook-edit-id').value;
+  const code = $('ebook-code').value.trim(), title = $('ebook-title').value.trim();
+  const coverFile = $('ebook-cover-file').files[0], pdfFile = $('ebook-pdf-file').files[0];
+  let coverUrl = $('ebook-cover-url').value, pdfUrl = $('ebook-pdf-url').value, pdfFileId = $('ebook-pdf-id').value;
+  try {
+    if (coverFile) { showLoader(true, 'Mengunggah cover...'); coverUrl = await uploadImage(coverFile, 'cover ebook', { type:'ebook_cover', kode:code }); }
+    if (pdfFile) {
+      if (pdfFile.type !== 'application/pdf') throw new Error('File E-Book wajib berformat .pdf');
+      showLoader(true, 'Mengunggah file PDF...');
+      const res = await apiPost('upload_file', { dataUrl: await fileToDataURL(pdfFile), filename: pdfFile.name, type:'ebook_pdf', kode:code, nama:title });
+      pdfUrl = res.url; pdfFileId = res.id || '';
+      if (res.shared === false) uploadPrivate = true;
+    }
+  } catch (err) { showLoader(false); return showToast(err.message, true); }
+  const p = { code, title, author:$('ebook-author').value.trim(), category:$('ebook-category').value, coverUrl, pdfUrl, pdfFileId };
+  showLoader(true, editId ? 'Memperbarui E-Book...' : 'Menyimpan E-Book...');
+  const res = editId ? await apiCall('update_ebook', { id: editId, ...p }) : await apiCall('add_ebook', p);
+  if (res) { toggleModal('modal-ebook', false); $('form-ebook').reset(); $('ebook-code').disabled = false; await refresh(res.message); warnIfPrivate(); } else showLoader(false);
 }
 
 // ---------- Sirkulasi ----------
@@ -712,6 +807,7 @@ function settingsHTML() {
     ${sec('credit-card','Pengaturan Cetak Kartu','Make it yours',`<div class="grid md:grid-cols-2 gap-6"><div class="space-y-4"><div><label class="lbl">Preset Ukuran</label><select id="set-preset" onchange="applyPreset()" class="inp"><option value="85.6x54">ID Card Landscape — 85,6 × 54 mm</option><option value="54x85.6">ID Card Portrait — 54 × 85,6 mm</option><option value="custom">Kustom</option></select></div><div class="grid grid-cols-2 gap-4">${f('cardWidth','Lebar (mm)','number','','min="30" max="210" step="0.1"')}${f('cardHeight','Tinggi (mm)','number','','min="30" max="210" step="0.1"')}</div>${imgField('cardBgFront','Background Sisi Depan')}${imgField('cardBgBack','Background Sisi Belakang')}<div><label class="lbl">Opasitas Background: <span id="opacity-val">${DEF.cardBgOpacity}</span>%</label><input id="set-cardBgOpacity" type="range" min="0" max="100" oninput="$('opacity-val').innerText=this.value" class="w-full"/></div></div><div><label class="lbl">Pratinjau (data contoh)</label><div id="card-preview" class="mt-1 overflow-auto p-2 bg-slate-50 rounded-xl border flex flex-wrap justify-center gap-3"></div></div></div>`)}
     <button class="btn platinum-gradient w-full py-4 tracking-widest">SIMPAN PENGATURAN</button></form>`;
 }
+const SETTING_UPLOAD_TYPE = { logoLeft:'logo_left', logoRight:'logo_right', cardBgFront:'card_bg_front', cardBgBack:'card_bg_back' };
 async function previewSettingImage(key) {
   const fileInput = $('file-' + key), file = fileInput.files[0]; if (!file) return;
   const prev = $('prev-' + key), reader = new FileReader();
@@ -719,7 +815,7 @@ async function previewSettingImage(key) {
   reader.readAsDataURL(file);
   try {
     showLoader(true, 'Mengunggah gambar ...');
-    const url = await uploadImage(file, key);
+    const url = await uploadImage(file, key, { type: SETTING_UPLOAD_TYPE[key] || key });
     $('set-' + key).value = url;
     showLoader(false);
     schedulePreview();
