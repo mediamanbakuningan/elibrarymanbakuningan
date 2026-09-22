@@ -759,8 +759,17 @@ function updateCounts() {
 }
 
 // ---------- PDF ----------
+// a4()  : opsi A4 UMUM — dipakai sheet cetak BARCODE buku. Default margin 8mm semua sisi. TIDAK DIUBAH.
+// Urutan array margin = [atas, kiri, bawah, kanan] (satuan mm, mengikuti jsPDF unit:'mm')
 const a4 = (f, m = 8) => ({ margin:m, filename:f, image:{ type:'jpeg', quality:.98 }, html2canvas:{ scale:2, useCORS:true }, jsPDF:{ unit:'mm', format:'a4', orientation:'portrait' }, pagebreak:{ mode:['css','legacy'], avoid:['tr','.stk'] } });
+
+// a4Laporan() : opsi khusus CETAK LAPORAN — REVISI: margin atas & bawah dipendekkan jadi 6mm, kiri/kanan 10mm.
+// Mau lebih rapat lagi? Ubah nilainya jadi [4, 10, 4, 10].
+const a4Laporan = (f, m = [6, 10, 6, 10]) => a4(f, m);
+
+// cardOpt() : opsi cetak KARTU anggota — TIDAK DIUBAH.
 const cardOpt = (w,h) => ({ margin:0, image:{ type:'jpeg', quality:.95 }, html2canvas:{ scale:3, useCORS:true }, jsPDF:{ unit:'mm', format:[w,h], orientation:w >= h ? 'landscape' : 'portrait' } });
+
 function pdfChain(pages, opt, blob) {
   const j = opt.jsPDF;
   let w = html2pdf().set(opt).from(pages[0], 'string').toPdf();
@@ -792,16 +801,19 @@ function kop() {
     <div style="border-bottom:1px solid #000;margin-top:1px"></div>
   </div>`;
 }
+
+// sign(): REVISI — jarak sebelum blok tanda tangan dipendekkan (30px -> 20px) agar bagian bawah tidak terlalu panjang
 function sign() {
   const s = S(), dots = '.....................';
-  return `<div style="display:flex;justify-content:space-between;margin-top:30px;font-size:11px;font-family:'Times New Roman',Times,serif;page-break-inside:avoid">
+  return `<div style="display:flex;justify-content:space-between;margin-top:20px;font-size:11px;font-family:'Times New Roman',Times,serif;page-break-inside:avoid">
     <div style="text-align:center;width:45%">Mengetahui,<br>Kepala Sekolah<br><br><br><br><br><b><u>${esc(s.headmaster || dots)}</u></b></div>
     <div style="text-align:center;width:45%">${esc(s.city)}${s.city ? ', ' : ''}${fmtDate(new Date())}<br>Petugas Perpustakaan<br><br><br><br><br><b><u>${esc(s.librarian || dots)}</u></b></div>
   </div>`;
 }
 
 // Setiap halaman laporan dibuat sebagai elemen PDF terpisah (kop selalu ikut di setiap halaman)
-const ROWS_PER_PAGE = 24;
+// REVISI spasi: judul 14px->8px, baris "Dicetak" 10px->6px, spacer halaman lanjutan 16px->6px, nomor halaman 10px->6px
+const ROWS_PER_PAGE = 24; // tetap 24 dulu; kalau halaman masih longgar, boleh dinaikkan bertahap ke 26 sambil cek hasil cetak
 function reportPages(d) {
   const chunks = []; for (let i = 0; i < d.r.length; i += ROWS_PER_PAGE) chunks.push(d.r.slice(i, i + ROWS_PER_PAGE));
   if (!chunks.length) chunks.push([]);
@@ -810,14 +822,14 @@ function reportPages(d) {
   return chunks.map((rows, pi) => {
     const isFirst = pi === 0, isLast = pi === chunks.length - 1, startNo = pi * ROWS_PER_PAGE;
     return `<div style="font-family:'Times New Roman',Times,serif;color:#000">${kop()}
-      ${isFirst ? `<h3 style="text-align:center;margin:14px 0 2px;font-size:13px;font-weight:bold;text-transform:uppercase;text-decoration:underline">${esc(d.t)}</h3>${d.n ? `<p style="text-align:center;margin:0 0 4px;font-size:10px;font-style:italic">${esc(d.n)}</p>` : ''}<p style="text-align:right;margin:0 0 10px;font-size:10px">Dicetak: ${fmtDate(new Date())}</p>` : `<div style="height:16px"></div>`}
+      ${isFirst ? `<h3 style="text-align:center;margin:8px 0 2px;font-size:13px;font-weight:bold;text-transform:uppercase;text-decoration:underline">${esc(d.t)}</h3>${d.n ? `<p style="text-align:center;margin:0 0 4px;font-size:10px;font-style:italic">${esc(d.n)}</p>` : ''}<p style="text-align:right;margin:0 0 6px;font-size:10px">Dicetak: ${fmtDate(new Date())}</p>` : `<div style="height:6px"></div>`}
       <table style="width:100%;border-collapse:collapse"><thead><tr>${['No',...d.c].map(c => `<th style="${th}">${c}</th>`).join('')}</tr></thead><tbody>${rows.length ? rows.map((r,i) => `<tr>${[startNo+i+1,...r].map((v,j) => `<td style="${td}${j===0?'text-align:center;':''}">${esc(v)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${d.c.length+1}" style="${td}text-align:center;font-style:italic">Tidak ada data</td></tr>`}</tbody></table>
       ${isLast ? sign() : ''}
-      <p style="text-align:center;font-size:10px;margin-top:10px;font-family:'Times New Roman',Times,serif">- ${pi+1} -</p>
+      <p style="text-align:center;font-size:10px;margin-top:6px;font-family:'Times New Roman',Times,serif">- ${pi+1} -</p>
       </div>`;
   });
 }
-
+  
 // Stiker 60x36 mm, 3 kolom x 6 baris = 18 stiker per halaman A4 (ruang disisakan untuk kop di setiap halaman).
 const STK = { cols: 3, rows: 6 };
 function stickerHTML(b) {
@@ -845,7 +857,7 @@ async function printReport(k) {
   }
   const d = reportDef(k);
   if (!d.r.length) return showToast('Tidak ada data untuk dicetak.', true);
-  job('Menyiapkan PDF...', () => pdfWork(reportPages(d), a4(d.f + '.pdf', [25, 20, 25, 20])), 'PDF berhasil diunduh.');
+  job('Menyiapkan PDF...', () => pdfWork(reportPages(d), a4Laporan(d.f + '.pdf', [25, 20, 25, 20])), 'PDF berhasil diunduh.');
 }
 
 // ---------- Kartu anggota (ukuran ID, 1 halaman = 1 kartu) ----------
