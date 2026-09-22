@@ -807,7 +807,7 @@ function sign() {
 }
 
 // Setiap halaman laporan dibuat sebagai elemen PDF terpisah (kop selalu ikut di setiap halaman)
-const ROWS_PER_PAGE = 30;
+const ROWS_PER_PAGE = 24;
 function reportPages(d) {
   const chunks = []; for (let i = 0; i < d.r.length; i += ROWS_PER_PAGE) chunks.push(d.r.slice(i, i + ROWS_PER_PAGE));
   if (!chunks.length) chunks.push([]);
@@ -869,7 +869,7 @@ function bottomBarGradient(cfg) {
   const list = colors.length ? colors : DEF.cardBottomColors.split(',');
   return `linear-gradient(90deg,${list.join(',')})`;
 }
-const cardShell = (d, inner, bgUrl, bgOpacity, font, cfg) => `<div style="position:relative;width:${d.W}px;height:${d.H}px;box-sizing:border-box;overflow:hidden;background:#fff;border:1px solid #064e3b;border-radius:0;font:${10 * d.k}px ${font || DEF.cardFont};color:#0f172a">${cardBgLayer(bgUrl,bgOpacity)}<div style="position:relative;z-index:1;width:100%;height:100%;display:flex;flex-direction:column">${inner}<div style="height:.5em;flex:none;background:${bottomBarGradient(cfg || {})}"></div></div></div>`;
+const cardShell = (d, inner, bgUrl, bgOpacity, font, cfg) => `<div style="position:relative;width:${d.W}px;height:${d.H}px;box-sizing:border-box;overflow:hidden;background:#fff;border:1px solid #064e3b;border-radius:0;font:${10 * d.k}px ${font || DEF.cardFont};color:#0f172a">${cardBgLayer(bgUrl,bgOpacity)}<div style="position:relative;z-index:1;width:100%;height:100%;display:flex;flex-direction:column">${inner}<div style="height:.65em;flex:none;background:${bottomBarGradient(cfg || {})};border-top-right-radius:2.4em .55em"></div></div></div>`;
 
 // ----- SISI DEPAN -----
 function cardFront(m, cfg = S()) {
@@ -879,11 +879,12 @@ function cardFront(m, cfg = S()) {
   const row = (l, v) => `<tr><td style="padding:0 .3em .25em 0;width:3.8em;vertical-align:top">${l}</td><td style="padding:0 .3em .25em 0;vertical-align:top">:</td><td style="padding:0 0 .25em;font-weight:900;word-break:break-word">${esc(v)}</td></tr>`;
   const kopLines = [cfg.libraryName, cfg.address, cfg.contact].filter(Boolean).map(x => `<div style="font-size:.55em;opacity:.9;line-height:1.25">${esc(x)}</div>`).join('');
   const logoBox = url => `<div style="width:3.6em;height:3.6em;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none">${url ? `<img src="${esc(url)}" crossorigin="anonymous" style="width:3.6em;height:3.6em;object-fit:contain;image-rendering:-webkit-optimize-contrast"/>` : ''}</div>`;
+  const hasL = !!cfg.logoLeft, hasR = !!cfg.logoRight, singleLogo = hasL !== hasR;
   return cardShell(d, `
     <div style="background:${headerColor};color:#fff;display:flex;align-items:center;gap:.6em;padding:.6em .8em;flex:none">
-      ${logoBox(cfg.logoLeft)}
-      <div style="line-height:1.15;min-width:0;flex:1;text-align:center"><div style="font-size:.95em;font-weight:900">${esc(cfg.schoolName)}</div>${kopLines}</div>
-      ${logoBox(cfg.logoRight)}
+      ${(!singleLogo || hasL) ? logoBox(cfg.logoLeft) : ''}
+      <div style="line-height:1.15;min-width:0;flex:1;text-align:${singleLogo ? 'left' : 'center'}"><div style="font-size:.95em;font-weight:900">${esc(cfg.schoolName)}</div>${kopLines}</div>
+      ${(!singleLogo || hasR) ? logoBox(cfg.logoRight) : ''}
     </div>
     <div style="text-align:center;font-size:.85em;font-weight:900;color:#064e3b;margin:.5em .9em 0;padding-bottom:.2em;border-bottom:1px solid #a7f3d0;flex:none">KARTU ANGGOTA PERPUSTAKAAN</div>
     <div style="flex:1;display:flex;flex-direction:${d.land ? 'row' : 'column'};align-items:center;justify-content:center;gap:.8em;padding:.4em .9em">
