@@ -170,7 +170,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzd7tQQZy4tHkP8_0csSbrq
 
 const PX = 96 / 25.4;
 const TABS = [['dashboard','Beranda','home','BERANDA PERPUSTAKAAN'],['books','Buku','book-open','INVENTARIS BUKU'],['ebooks','E-Book','book-marked','PERPUSTAKAAN DIGITAL (E-BOOK)'],['members','Anggota','users','DATA ANGGOTA'],['circulation','Sirkulasi','scan-line','SIRKULASI & SCAN'],['reports','Laporan','file-text','LAPORAN SISTEM'],['settings','Pengaturan','settings','PENGATURAN']];
-const KEYS = ['schoolName','libraryName','address','contact','city','headmaster','librarian','logoLeft','logoRight','loanDurationDays','finePerDay','cardWidth','cardHeight','bookCategories','cardBgFront','cardBgBack','cardBgOpacity','cardHeaderColor','cardFont','cardRules','cardQuote','cardQuoteAuthor','cardSpaceDateSign','cardSpaceSignQuote','cardBottomColors','reportMarginTop','reportMarginRight','reportMarginBottom','reportMarginLeft'];
+const KEYS = ['schoolName','libraryName','address','contact','city','headmaster','librarian','logoLeft','logoRight','reportLogoLeft','reportLogoRight','loanDurationDays','finePerDay','cardWidth','cardHeight','bookCategories','cardBgFront','cardBgBack','cardBgOpacity','cardHeaderColor','cardFont','cardRules','cardQuote','cardQuoteAuthor','cardSpaceDateSign','cardSpaceSignQuote','cardBottomColors','reportMarginTop','reportMarginRight','reportMarginBottom','reportMarginLeft'];
 const DEF = { loanDurationDays: 7, finePerDay: 0, cardWidth: 85.6, cardHeight: 54, bookCategories: 'Pendidikan,Sains,Novel,Sejarah,Referensi', cardBgOpacity: 20, cardHeaderColor: '#059669', cardFont: "Arial, sans-serif", cardRules: 'Kartu ini wajib dibawa setiap kali melakukan peminjaman atau pengembalian buku.\nKeterlambatan pengembalian buku akan dikenakan denda sesuai ketentuan yang berlaku.\nKerusakan atau kehilangan buku yang dipinjam sepenuhnya menjadi tanggung jawab peminjam.\nKartu anggota ini tidak boleh dipinjamkan atau digunakan oleh orang lain.', cardQuote: 'Membaca adalah jendela dunia, dan buku adalah kuncinya.', cardQuoteAuthor: 'Anonim', cardSpaceDateSign: 0.55, cardSpaceSignQuote: 0.55, cardBottomColors: '#064e3b,#10b981,#064e3b', reportMarginTop: 25, reportMarginRight: 20, reportMarginBottom: 25, reportMarginLeft: 20 };
 let appState = { activeTab:'dashboard', setupError:false, books:[], members:[], loans:[], visits:[], ebooks:[], settings:{} };
 let scanMode = 'loan', qr = null, scanTarget = null, pvTimer = null, uploadPrivate = false, ebookSearch = '', bookSearch = '', memberSearch = '';
@@ -256,8 +256,8 @@ async function compressImage(file, maxSide, mime, quality) {
 async function uploadImage(file, label, extra = {}) {
   if (!file) return '';
   const isPdf = file.type === 'application/pdf';
-  const isLogo = /^logo/.test(label || '');
-  const dataUrl = isPdf ? await fileToDataURL(file) : await compressImage(file, isLogo ? 500 : 1200, isLogo ? 'image/png' : 'image/jpeg', 0.85);
+  const isLogo = /logo/i.test(label || '');
+  const dataUrl = isPdf ? await fileToDataURL(file) : await compressImage(file, isLogo ? 900 : 1200, isLogo ? 'image/png' : 'image/jpeg', 0.92);
   const res = await apiPost('upload_file', { dataUrl, filename: file.name, ...extra }); // error asli server ikut terlempar
   if (!res || !res.url) throw new Error('Gagal mengunggah ' + (label || 'file') + ': server tidak mengembalikan URL.');
   if (res.shared === false) uploadPrivate = true;
@@ -764,8 +764,8 @@ function reportMargin() {
   const v = (k, d) => { const n = N(s[k] !== undefined && s[k] !== '' ? s[k] : d); return n; };
   return [v('reportMarginTop', DEF.reportMarginTop), v('reportMarginLeft', DEF.reportMarginLeft), v('reportMarginBottom', DEF.reportMarginBottom), v('reportMarginRight', DEF.reportMarginRight)];
 }
-const a4 = (f, m = 8) => ({ margin:m, filename:f, image:{ type:'jpeg', quality:.98 }, html2canvas:{ scale:2, useCORS:true }, jsPDF:{ unit:'mm', format:'a4', orientation:'portrait' }, pagebreak:{ mode:['css','legacy'], avoid:['tr','.stk'] } });
-const cardOpt = (w,h) => ({ margin:0, image:{ type:'jpeg', quality:.95 }, html2canvas:{ scale:3, useCORS:true }, jsPDF:{ unit:'mm', format:[w,h], orientation:w >= h ? 'landscape' : 'portrait' } });
+const a4 = (f, m = 8) => ({ margin:m, filename:f, image:{ type:'jpeg', quality:.98 }, html2canvas:{ scale:3, useCORS:true, imageTimeout:15000 }, jsPDF:{ unit:'mm', format:'a4', orientation:'portrait' }, pagebreak:{ mode:['css','legacy'], avoid:['tr','.stk'] } });
+const cardOpt = (w,h) => ({ margin:0, image:{ type:'jpeg', quality:.98 }, html2canvas:{ scale:5, useCORS:true, imageTimeout:15000 }, jsPDF:{ unit:'mm', format:[w,h], orientation:w >= h ? 'landscape' : 'portrait' } });
 function pdfChain(pages, opt, blob) {
   const j = opt.jsPDF;
   let w = html2pdf().set(opt).from(pages[0], 'string').toPdf();
@@ -782,16 +782,17 @@ function barcode(v) { const c = document.createElement('canvas'); try { JsBarcod
 
 function kop() {
   const s = S(), im = u => u ? `<img src="${esc(u)}" crossorigin="anonymous" style="height:60px;max-width:60px;object-fit:contain">` : '<div style="width:60px"></div>';
+  const logoL = s.reportLogoLeft || s.logoLeft, logoR = s.reportLogoRight || s.logoRight;
   return `<div style="font-family:'Times New Roman',Times,serif;color:#000">
     <div style="display:flex;align-items:center;justify-content:center;gap:14px;padding-bottom:4px">
-      ${im(s.logoLeft)}
+      ${im(logoL)}
       <div style="text-align:center;flex:1;line-height:1.35">
         <div style="font-size:16px;font-weight:bold;text-transform:uppercase;letter-spacing:.5px">${esc(s.schoolName || 'PERPUSTAKAAN SEKOLAH')}</div>
         ${s.libraryName ? `<div style="font-size:13px;font-weight:bold;text-transform:uppercase">${esc(s.libraryName)}</div>` : ''}
         <div style="font-size:10px">${esc(s.address)}</div>
         <div style="font-size:10px">${esc(s.contact)}</div>
       </div>
-      ${im(s.logoRight)}
+      ${im(logoR)}
     </div>
     <div style="border-bottom:3px solid #000;margin-top:4px"></div>
     <div style="border-bottom:1px solid #000;margin-top:1px"></div>
@@ -877,7 +878,7 @@ function cardFront(m, cfg = S()) {
   const headerColor = esc(cfg.cardHeaderColor || DEF.cardHeaderColor);
   const row = (l, v) => `<tr><td style="padding:0 .3em .25em 0;width:3.8em;vertical-align:top">${l}</td><td style="padding:0 .3em .25em 0;vertical-align:top">:</td><td style="padding:0 0 .25em;font-weight:900;word-break:break-word">${esc(v)}</td></tr>`;
   const kopLines = [cfg.libraryName, cfg.address, cfg.contact].filter(Boolean).map(x => `<div style="font-size:.55em;opacity:.9;line-height:1.25">${esc(x)}</div>`).join('');
-  const logoBox = url => `<div style="width:2.8em;height:2.8em;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none">${url ? `<img src="${esc(url)}" crossorigin="anonymous" style="width:2.8em;height:2.8em;object-fit:contain"/>` : ''}</div>`;
+  const logoBox = url => `<div style="width:3.6em;height:3.6em;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none">${url ? `<img src="${esc(url)}" crossorigin="anonymous" style="width:3.6em;height:3.6em;object-fit:contain;image-rendering:-webkit-optimize-contrast"/>` : ''}</div>`;
   return cardShell(d, `
     <div style="background:${headerColor};color:#fff;display:flex;align-items:center;gap:.6em;padding:.6em .8em;flex:none">
       ${logoBox(cfg.logoLeft)}
@@ -941,14 +942,16 @@ function settingsHTML() {
   const FONT_OPTS = [["Arial, sans-serif","Arial"],["'Times New Roman', Times, serif","Times New Roman"],["Georgia, serif","Georgia"],["'Courier New', Courier, monospace","Courier New"],["Verdana, sans-serif","Verdana"],["'Trebuchet MS', sans-serif","Trebuchet MS"],["Tahoma, sans-serif","Tahoma"],["'Segoe UI', sans-serif","Segoe UI"]];
   const sec = (ic,t,d,body) => `<div class="card"><h3 class="font-black text-slate-800 text-lg flex items-center gap-2"><i data-lucide="${ic}" class="w-5 h-5 text-emerald-600"></i> ${t}</h3><p class="text-xs text-slate-400 font-bold mb-5">${d}</p>${body}</div>`;
   return `<form onsubmit="submitSettings(event)" oninput="schedulePreview()" class="max-w-3xl mx-auto space-y-4 md:space-y-6">
-    ${sec('building-2','Profil Instansi','Create your own custom',`<div class="space-y-4">${f('schoolName','Nama Sekolah')}${f('libraryName','Nama Perpustakaan')}${f('address','Alamat')}<div class="grid grid-cols-2 gap-4">${f('contact','Telepon / Email')}${f('city','Kota (titimangsa laporan & kartu)')}</div><div class="grid grid-cols-2 gap-4">${f('headmaster','Nama Kepala Sekolah')}${f('librarian','Nama Petugas Perpustakaan')}</div><div class="grid grid-cols-2 gap-4">${imgField('logoLeft','Logo Kiri')}${imgField('logoRight','Logo Kanan')}</div></div>`)}
+    ${sec('building-2','Profil Instansi','Create your own custom',`<div class="space-y-4">${f('schoolName','Nama Sekolah')}${f('libraryName','Nama Perpustakaan')}${f('address','Alamat')}<div class="grid grid-cols-2 gap-4">${f('contact','Telepon / Email')}${f('city','Kota (titimangsa laporan & kartu)')}</div><div class="grid grid-cols-2 gap-4">${f('headmaster','Nama Kepala Sekolah')}${f('librarian','Nama Petugas Perpustakaan')}</div></div>`)}
     ${sec('repeat','Pengaturan Pinjaman','Aturan durasi peminjaman dan denda keterlambatan.',`<div class="grid grid-cols-2 gap-4">${f('loanDurationDays','Durasi Pinjam (Hari)','number','','min="1"')}${f('finePerDay','Denda / Hari (Rp)','number','','min="0"')}</div>`)}
     ${sec('tags','Jenis / Kategori Buku & E-Book','Satu kategori per baris. Dipakai pada pilihan kategori buku, E-Book (termasuk pengelompokan rak E-Book), dan template Excel.',`<textarea id="set-bookCategories" rows="5" class="inp" placeholder="Pendidikan&#10;Sains&#10;Novel"></textarea>`)}
+    ${sec('image','Logo Kartu Anggota','Logo yang tampil di kop KARTU ANGGOTA (sisi depan). Gunakan gambar resolusi tinggi/persegi (PNG transparan disarankan) agar tidak buram saat dicetak.',`<div class="grid grid-cols-2 gap-4">${imgField('logoLeft','Logo Kiri (Kartu)')}${imgField('logoRight','Logo Kanan (Kartu)')}</div>`)}
+    ${sec('file-text','Logo Laporan (Kop Surat)','Logo yang tampil di kop setiap PDF laporan &amp; barcode buku. Terpisah dari logo kartu di atas — kosongkan untuk memakai logo kartu sebagai cadangan.',`<div class="grid grid-cols-2 gap-4">${imgField('reportLogoLeft','Logo Kiri (Laporan)')}${imgField('reportLogoRight','Logo Kanan (Laporan)')}</div>`)}
     ${sec('layout-panel-top','Margin Cetak PDF Laporan','Atur jarak margin atas, bawah, kiri, dan kanan (mm) saat mencetak PDF laporan (Keaktifan, Buku Tersedia/Dipinjam/Dikembalikan, Tunggakan Akhir).',`<div class="grid grid-cols-2 gap-4">${f('reportMarginTop','Margin Atas (mm)','number','','min="0" max="60" step="1"')}${f('reportMarginBottom','Margin Bawah (mm)','number','','min="0" max="60" step="1"')}${f('reportMarginLeft','Margin Kiri (mm)','number','','min="0" max="60" step="1"')}${f('reportMarginRight','Margin Kanan (mm)','number','','min="0" max="60" step="1"')}</div>`)}
     ${sec('credit-card','Pengaturan Cetak Kartu','Sesuaikan tampilan, warna, font, jarak elemen, dan isi tata tertib kartu anggota',`<div class="grid md:grid-cols-2 gap-6"><div class="space-y-4"><div><label class="lbl">Preset Ukuran</label><select id="set-preset" onchange="applyPreset()" class="inp"><option value="85.6x54">ID Card Landscape — 85,6 × 54 mm</option><option value="54x85.6">ID Card Portrait — 54 × 85,6 mm</option><option value="custom">Kustom</option></select></div><div class="grid grid-cols-2 gap-4">${f('cardWidth','Lebar (mm)','number','','min="30" max="210" step="0.1"')}${f('cardHeight','Tinggi (mm)','number','','min="30" max="210" step="0.1"')}</div>${imgField('cardBgFront','Background Sisi Depan')}${imgField('cardBgBack','Background Sisi Belakang')}<div><label class="lbl">Opasitas Background: <span id="opacity-val">${DEF.cardBgOpacity}</span>%</label><input id="set-cardBgOpacity" type="range" min="0" max="100" oninput="$('opacity-val').innerText=this.value" class="w-full"/></div><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Warna Background Kop Kartu</label><input id="set-cardHeaderColor" type="color" class="inp !p-1 !h-12 cursor-pointer"/></div><div><label class="lbl">Font Kartu</label><select id="set-cardFont" class="inp">${FONT_OPTS.map(o => `<option value="${o[0]}">${o[1]}</option>`).join('')}</select></div></div><div><label class="lbl">Warna Garis Bawah Kartu (list warna)</label><input id="set-cardBottomColors" class="inp" placeholder="#064e3b,#10b981,#064e3b"/><p class="text-[9px] text-slate-400 font-bold mt-1">Pisahkan dengan koma (kode HEX). Minimal 2 warna untuk membuat gradasi.</p></div><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Jarak Titimangsa ↔ TTD (em)</label>${f('cardSpaceDateSign','','number','','min="0" max="5" step="0.05"')}</div><div><label class="lbl">Jarak TTD ↔ Quotes (em)</label>${f('cardSpaceSignQuote','','number','','min="0" max="5" step="0.05"')}</div></div><div><label class="lbl">Isi Tata Tertib (satu poin per baris)</label><textarea id="set-cardRules" rows="5" class="inp" placeholder="Tulis satu poin tata tertib per baris..."></textarea></div><div><label class="lbl">Quotes di Kartu (tampil di bawah ttd)</label><textarea id="set-cardQuote" rows="2" class="inp" placeholder="Contoh: Membaca adalah jendela dunia..."></textarea></div><div><label class="lbl">Sumber / Pembicara Quotes</label><input id="set-cardQuoteAuthor" class="inp" placeholder="Contoh: Anonim, Nabi Muhammad SAW, dll"/></div></div><div><label class="lbl">Pratinjau (data contoh)</label><div id="card-preview" class="mt-1 overflow-auto p-2 bg-slate-50 rounded-xl border flex flex-wrap justify-center gap-3"></div></div></div>`)}
     <button class="btn platinum-gradient w-full py-4 tracking-widest">SIMPAN PENGATURAN</button></form>`;
 }
-const SETTING_UPLOAD_TYPE = { logoLeft:'logo_left', logoRight:'logo_right', cardBgFront:'card_bg_front', cardBgBack:'card_bg_back' };
+const SETTING_UPLOAD_TYPE = { logoLeft:'logo_left', logoRight:'logo_right', reportLogoLeft:'report_logo_left', reportLogoRight:'report_logo_right', cardBgFront:'card_bg_front', cardBgBack:'card_bg_back' };
 async function previewSettingImage(key) {
   const fileInput = $('file-' + key), file = fileInput.files[0]; if (!file) return;
   const prev = $('prev-' + key), reader = new FileReader();
@@ -979,7 +982,7 @@ function populateSettings() {
   const s = S();
   KEYS.forEach(k => { const e = $('set-' + k); if (e) e.value = (s[k] !== undefined && s[k] !== '') ? s[k] : (DEF[k] !== undefined ? DEF[k] : ''); });
   $('set-bookCategories').value = getCategories().join('\n');
-  ['logoLeft','logoRight','cardBgFront','cardBgBack'].forEach(k => {
+  ['logoLeft','logoRight','reportLogoLeft','reportLogoRight','cardBgFront','cardBgBack'].forEach(k => {
     const url = $('set-' + k).value, prev = $('prev-' + k);
     if (url) { prev.src = url; prev.classList.remove('hide'); } else { prev.classList.add('hide'); prev.src = ''; }
   });
