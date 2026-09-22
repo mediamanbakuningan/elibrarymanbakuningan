@@ -166,10 +166,10 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzd7tQQZy4tHkP8_0csSbrq
 
 const PX = 96 / 25.4;
 const TABS = [['dashboard','Beranda','home','BERANDA PERPUSTAKAAN'],['books','Buku','book-open','INVENTARIS BUKU'],['ebooks','E-Book','book-marked','PERPUSTAKAAN DIGITAL (E-BOOK)'],['members','Anggota','users','DATA ANGGOTA'],['circulation','Sirkulasi','scan-line','SIRKULASI & SCAN'],['reports','Laporan','file-text','LAPORAN SISTEM'],['settings','Pengaturan','settings','PENGATURAN']];
-const KEYS = ['schoolName','libraryName','address','contact','city','headmaster','librarian','logoLeft','logoRight','loanDurationDays','finePerDay','cardWidth','cardHeight','bookCategories','cardBgFront','cardBgBack','cardBgOpacity','cardHeaderColor','cardFont','cardRules','cardQuote','cardQuoteAuthor','cardSpaceDateSign','cardSpaceSignQuote','cardBottomColors'];
-const DEF = { loanDurationDays: 7, finePerDay: 0, cardWidth: 85.6, cardHeight: 54, bookCategories: 'Pendidikan,Sains,Novel,Sejarah,Referensi', cardBgOpacity: 20, cardHeaderColor: '#059669', cardFont: "Arial, sans-serif", cardRules: 'Kartu ini wajib dibawa setiap kali melakukan peminjaman atau pengembalian buku.\nKeterlambatan pengembalian buku akan dikenakan denda sesuai ketentuan yang berlaku.\nKerusakan atau kehilangan buku yang dipinjam sepenuhnya menjadi tanggung jawab peminjam.\nKartu anggota ini tidak boleh dipinjamkan atau digunakan oleh orang lain.', cardQuote: 'Membaca adalah jendela dunia, dan buku adalah kuncinya.', cardQuoteAuthor: 'Anonim', cardSpaceDateSign: 0.55, cardSpaceSignQuote: 0.55, cardBottomColors: '#064e3b,#10b981,#064e3b' };
+const KEYS = ['schoolName','libraryName','address','contact','city','headmaster','librarian','logoLeft','logoRight','loanDurationDays','finePerDay','cardWidth','cardHeight','bookCategories','cardBgFront','cardBgBack','cardBgOpacity','cardHeaderColor','cardFont','cardRules','cardQuote','cardQuoteAuthor'];
+const DEF = { loanDurationDays: 7, finePerDay: 0, cardWidth: 85.6, cardHeight: 54, bookCategories: 'Pendidikan,Sains,Novel,Sejarah,Referensi', cardBgOpacity: 20, cardHeaderColor: '#059669', cardFont: "Arial, sans-serif", cardRules: 'Kartu ini wajib dibawa setiap kali melakukan peminjaman atau pengembalian buku.\nKeterlambatan pengembalian buku akan dikenakan denda sesuai ketentuan yang berlaku.\nKerusakan atau kehilangan buku yang dipinjam sepenuhnya menjadi tanggung jawab peminjam.\nKartu anggota ini tidak boleh dipinjamkan atau digunakan oleh orang lain.', cardQuote: 'Membaca adalah jendela dunia, dan buku adalah kuncinya.', cardQuoteAuthor: 'Anonim' };
 let appState = { activeTab:'dashboard', setupError:false, books:[], members:[], loans:[], visits:[], ebooks:[], settings:{} };
-let scanMode = 'loan', qr = null, scanTarget = null, pvTimer = null, uploadPrivate = false, ebookSearch = '', bookSearch = '', memberSearch = '';
+let scanMode = 'loan', qr = null, scanTarget = null, pvTimer = null, uploadPrivate = false, ebookSearch = '';
 
 const $ = id => document.getElementById(id);
 const S = () => appState.settings || {};
@@ -338,7 +338,6 @@ function renderView() {
     if (t === 'settings') { populateSettings(); refreshPreview(); }
     if (t === 'ebooks') renderEbookGroups();
     if (t === 'books') renderBookGroups();
-    if (t === 'members') renderMemberGroups();
     if (t === 'circulation') setTimeout(() => $('circ-member') && $('circ-member').focus(), 60);
   }
   try { lucide.createIcons(); } catch (e) {}
@@ -398,24 +397,16 @@ async function payFine(loanId) {
 
 // ---------- Buku ----------
 function booksHTML() {
-  return `<div class="card"><div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4"><h3 class="text-lg md:text-xl font-black text-slate-800 w-full">Katalog Pustaka</h3><div class="flex w-full md:w-auto gap-2 flex-wrap"><button onclick="downloadExcelTemplateBooks()" class="btn !shadow-none flex-1 md:flex-none bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-2 !text-xs"><i data-lucide="download" class="w-4 h-4"></i> Template</button><label class="btn platinum-gradient flex-1 md:flex-none flex items-center justify-center gap-2 cursor-pointer !text-xs"><i data-lucide="upload" class="w-4 h-4"></i> Upload Excel<input type="file" accept=".xlsx,.xls" class="hidden" onchange="handleExcelUploadBooks(event)"></label><button onclick="openBookModal()" class="btn bg-emerald-800 text-white flex items-center gap-2 justify-center"><i data-lucide="plus" class="w-5 h-5"></i></button></div></div>
-    <div class="relative mb-6">
-      <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
-      <input id="book-search" type="text" value="${esc(bookSearch)}" oninput="filterBooks(this.value)" placeholder="Cari judul, penulis, kategori, atau barcode/ISBN..." class="inp !pl-11"/>
-    </div>
-    <div id="book-groups"></div></div>`;
+  return `<div class="card"><div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4"><h3 class="text-lg md:text-xl font-black text-slate-800 w-full">Katalog Pustaka</h3><div class="flex w-full md:w-auto gap-2 flex-wrap"><button onclick="downloadExcelTemplateBooks()" class="btn !shadow-none flex-1 md:flex-none bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-2 !text-xs"><i data-lucide="download" class="w-4 h-4"></i> Template</button><label class="btn platinum-gradient flex-1 md:flex-none flex items-center justify-center gap-2 cursor-pointer !text-xs"><i data-lucide="upload" class="w-4 h-4"></i> Upload Excel<input type="file" accept=".xlsx,.xls" class="hidden" onchange="handleExcelUploadBooks(event)"></label><button onclick="openBookModal()" class="btn bg-emerald-800 text-white flex items-center gap-2 justify-center"><i data-lucide="plus" class="w-5 h-5"></i></button></div></div><div id="book-groups"></div></div>`;
 }
 function bookRowHTML(b) {
   return `<tr class="border-b border-slate-100 hover:bg-slate-50"><td class="py-3 px-2"><p class="font-bold text-slate-800 text-xs md:text-sm">${esc(b.Title)}</p><p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">${esc(b.Author)}</p></td><td class="py-3 px-2 text-center"><span class="text-[9px] font-black px-3 py-1.5 rounded-full uppercase ${b.Status==='available'?'bg-green-100 text-green-700':'bg-orange-100 text-orange-700'}">${esc(b.Status)}</span></td><td class="py-3 px-2"><span class="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">${esc(b.ISBN)}</span></td><td class="py-3 px-2 text-right"><div class="flex justify-end gap-1"><button onclick="openBookModal('${esc(b.ID)}')" title="Edit" class="p-2 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-800 hover:text-white transition"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="deleteItem('Books','${esc(b.ID)}')" title="Hapus" class="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></td></tr>`;
 }
-function filterBooks(v) { bookSearch = v; renderBookGroups(); }
 function renderBookGroups() {
   const el = $('book-groups'); if (!el) return;
-  const q = bookSearch.trim().toLowerCase();
-  const filtered = appState.books.filter(b => !q || [b.Title, b.Author, b.Category, b.ISBN].some(v => String(v || '').toLowerCase().includes(q)));
-  if (!filtered.length) { el.innerHTML = empty(appState.books.length ? 'Tidak ada buku yang cocok dengan pencarian "' + esc(bookSearch) + '".' : 'Belum ada data buku.'); return; }
+  if (!appState.books.length) { el.innerHTML = empty('Belum ada data buku.'); return; }
   const cats = getCategories(), groups = {};
-  filtered.forEach(b => { const c = String(b.Category || '').trim() || 'Tanpa Kategori'; (groups[c] = groups[c] || []).push(b); });
+  appState.books.forEach(b => { const c = String(b.Category || '').trim() || 'Tanpa Kategori'; (groups[c] = groups[c] || []).push(b); });
   const orderedCats = [...cats.filter(c => groups[c]), ...Object.keys(groups).filter(c => !cats.includes(c)).sort()];
   el.innerHTML = orderedCats.map(cat => `
     <div class="mb-7 last:mb-0">
@@ -481,36 +472,11 @@ async function handleExcelUploadBooks(e) {
 
 // ---------- Anggota ----------
 function membersHTML() {
-  return `<div class="card"><div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4"><h3 class="font-black text-slate-800 text-lg md:text-xl w-full">Daftar Anggota Aktif</h3><div class="flex w-full md:w-auto gap-2"><button onclick="downloadExcelTemplate()" class="btn !shadow-none flex-1 md:flex-none bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-2 !text-xs"><i data-lucide="download" class="w-4 h-4"></i> Template</button><label class="btn platinum-gradient flex-1 md:flex-none flex items-center justify-center gap-2 cursor-pointer !text-xs"><i data-lucide="upload" class="w-4 h-4"></i> Upload Excel<input type="file" accept=".xlsx,.xls" class="hidden" onchange="handleExcelUpload(event)"></label><button onclick="openMemberModal()" class="btn bg-emerald-800 text-white"><i data-lucide="plus" class="w-5 h-5"></i></button></div></div>
-    <div class="relative mb-6">
-      <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
-      <input id="member-search" type="text" value="${esc(memberSearch)}" oninput="filterMembers(this.value)" placeholder="Cari nama, kelas, atau ID/NISN anggota..." class="inp !pl-11"/>
-    </div>
-    <div id="member-groups"></div></div>`;
-}
-function memberCardHTML(m) {
-  const uf = appState.loans.filter(l => l.MemberID === m.ID && l.FinePaid === 'belum').reduce((s,l) => s + N(l.Fine), 0);
-  return `<div class="p-3 md:p-4 bg-white rounded-3xl border ${uf>0?'border-red-200':'border-slate-100'} shadow-sm flex items-center gap-3 hover:border-emerald-500 transition"><div class="w-12 h-12 rounded-2xl bg-slate-200 overflow-hidden flex-shrink-0 border"><img src="${esc(m.PhotoUrl) || 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(m.Name)}" class="w-full h-full object-cover" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=Err'"/></div><div class="flex-1 overflow-hidden"><p class="font-black text-slate-800 truncate text-xs md:text-sm">${esc(m.Name)}${uf>0?`<span class="text-[8px] font-black bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1">Denda ${rp(uf)}</span>`:''}</p><p class="text-[9px] md:text-[10px] text-slate-500 font-bold uppercase tracking-widest truncate">${esc(m.Class)} • <span class="font-mono text-emerald-700">${esc(m.MemberID)}</span></p></div><div class="flex gap-1"><button onclick="openMemberModal('${esc(m.ID)}')" title="Edit" class="p-2 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-800 hover:text-white transition"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="printCard('${esc(m.ID)}')" title="Unduh Kartu (PDF)" class="p-2 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-800 hover:text-white transition"><i data-lucide="printer" class="w-4 h-4"></i></button><button onclick="deleteItem('Members','${esc(m.ID)}')" title="Hapus" class="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`;
-}
-function filterMembers(v) { memberSearch = v; renderMemberGroups(); }
-function renderMemberGroups() {
-  const el = $('member-groups'); if (!el) return;
-  const q = memberSearch.trim().toLowerCase();
-  const filtered = appState.members.filter(m => !q || [m.Name, m.Class, m.MemberID].some(v => String(v || '').toLowerCase().includes(q)));
-  if (!filtered.length) { el.innerHTML = empty(appState.members.length ? 'Tidak ada anggota yang cocok dengan pencarian "' + esc(memberSearch) + '".' : 'Belum ada data anggota.'); return; }
-  const groups = {};
-  filtered.forEach(m => { const c = String(m.Class || '').trim() || 'Tanpa Kelas'; (groups[c] = groups[c] || []).push(m); });
-  const orderedClasses = Object.keys(groups).sort((a,b) => a.localeCompare(b, 'id', { numeric:true, sensitivity:'base' }));
-  el.innerHTML = orderedClasses.map(cls => `
-    <div class="mb-7 last:mb-0">
-      <div class="flex items-center gap-2 mb-3">
-        <div class="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full font-black text-xs uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="users" class="w-3.5 h-3.5"></i> Kelas ${esc(cls)}</div>
-        <span class="text-[10px] font-bold text-slate-400">${groups[cls].length} anggota</span>
-        <div class="flex-1 h-px bg-slate-100"></div>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">${groups[cls].map(memberCardHTML).join('')}</div>
-    </div>`).join('');
-  try { lucide.createIcons(); } catch (e) {}
+  const cards = appState.members.map(m => {
+    const uf = appState.loans.filter(l => l.MemberID === m.ID && l.FinePaid === 'belum').reduce((s,l) => s + N(l.Fine), 0);
+    return `<div class="p-3 md:p-4 bg-white rounded-3xl border ${uf>0?'border-red-200':'border-slate-100'} shadow-sm flex items-center gap-3 hover:border-emerald-500 transition"><div class="w-12 h-12 rounded-2xl bg-slate-200 overflow-hidden flex-shrink-0 border"><img src="${esc(m.PhotoUrl) || 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(m.Name)}" class="w-full h-full object-cover" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=Err'"/></div><div class="flex-1 overflow-hidden"><p class="font-black text-slate-800 truncate text-xs md:text-sm">${esc(m.Name)}${uf>0?`<span class="text-[8px] font-black bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1">Denda ${rp(uf)}</span>`:''}</p><p class="text-[9px] md:text-[10px] text-slate-500 font-bold uppercase tracking-widest truncate">${esc(m.Class)} • <span class="font-mono text-emerald-700">${esc(m.MemberID)}</span></p></div><div class="flex gap-1"><button onclick="openMemberModal('${esc(m.ID)}')" title="Edit" class="p-2 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-800 hover:text-white transition"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="printCard('${esc(m.ID)}')" title="Unduh Kartu (PDF)" class="p-2 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-800 hover:text-white transition"><i data-lucide="printer" class="w-4 h-4"></i></button><button onclick="deleteItem('Members','${esc(m.ID)}')" title="Hapus" class="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`;
+  }).join('') || `<div class="col-span-full text-center py-10 text-slate-400 font-bold text-sm">Belum ada data anggota.</div>`;
+  return `<div class="card"><div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4"><h3 class="font-black text-slate-800 text-lg md:text-xl w-full">Daftar Anggota Aktif</h3><div class="flex w-full md:w-auto gap-2"><button onclick="downloadExcelTemplate()" class="btn !shadow-none flex-1 md:flex-none bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-2 !text-xs"><i data-lucide="download" class="w-4 h-4"></i> Template</button><label class="btn platinum-gradient flex-1 md:flex-none flex items-center justify-center gap-2 cursor-pointer !text-xs"><i data-lucide="upload" class="w-4 h-4"></i> Upload Excel<input type="file" accept=".xlsx,.xls" class="hidden" onchange="handleExcelUpload(event)"></label><button onclick="openMemberModal()" class="btn bg-emerald-800 text-white"><i data-lucide="plus" class="w-5 h-5"></i></button></div></div><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">${cards}</div></div>`;
 }
 function previewMemberPhoto(e) {
   const f = e.target.files[0]; if (!f) return;
@@ -828,13 +794,7 @@ function cardBgLayer(url, opacity) {
   const op = Math.max(0, Math.min(100, N(opacity !== undefined && opacity !== '' ? opacity : DEF.cardBgOpacity))) / 100;
   return `<img src="${esc(url)}" crossorigin="anonymous" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:${op};z-index:0"/>`;
 }
-function bottomBarGradient(cfg) {
-  const raw = (cfg.cardBottomColors !== undefined && cfg.cardBottomColors !== '') ? cfg.cardBottomColors : DEF.cardBottomColors;
-  const colors = String(raw).split(',').map(s => s.trim()).filter(Boolean);
-  const list = colors.length ? colors : DEF.cardBottomColors.split(',');
-  return `linear-gradient(90deg,${list.join(',')})`;
-}
-const cardShell = (d, inner, bgUrl, bgOpacity, font, cfg) => `<div style="position:relative;width:${d.W}px;height:${d.H}px;box-sizing:border-box;overflow:hidden;background:#fff;border:1px solid #064e3b;border-radius:0;font:${10 * d.k}px ${font || DEF.cardFont};color:#0f172a">${cardBgLayer(bgUrl,bgOpacity)}<div style="position:relative;z-index:1;width:100%;height:100%;display:flex;flex-direction:column">${inner}<div style="height:.5em;flex:none;background:${bottomBarGradient(cfg || {})}"></div></div></div>`;
+const cardShell = (d, inner, bgUrl, bgOpacity, font) => `<div style="position:relative;width:${d.W}px;height:${d.H}px;box-sizing:border-box;overflow:hidden;background:#fff;border:1px solid #064e3b;border-radius:${8 * d.k}px;font:${10 * d.k}px ${font || DEF.cardFont};color:#0f172a">${cardBgLayer(bgUrl,bgOpacity)}<div style="position:relative;z-index:1;width:100%;height:100%;display:flex;flex-direction:column">${inner}<div style="height:.5em;flex:none;background:linear-gradient(90deg,#064e3b,#10b981,#064e3b)"></div></div></div>`;
 
 // ----- SISI DEPAN -----
 function cardFront(m, cfg = S()) {
@@ -845,7 +805,7 @@ function cardFront(m, cfg = S()) {
   const kopLines = [cfg.libraryName, cfg.address, cfg.contact].filter(Boolean).map(x => `<div style="font-size:.55em;opacity:.9;line-height:1.25">${esc(x)}</div>`).join('');
   return cardShell(d, `
     <div style="background:${headerColor};color:#fff;display:flex;align-items:center;gap:.6em;padding:.6em .8em;flex:none">
-      ${logo ? `<div style="width:2.8em;height:2.8em;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none"><img src="${esc(logo)}" crossorigin="anonymous" style="width:2.8em;height:2.8em;object-fit:contain"/></div>` : ''}
+      ${logo ? `<div style="width:2.8em;height:2.8em;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none"><img src="${esc(logo)}" crossorigin="anonymous" style="width:2.2em;height:2.2em;object-fit:contain"/></div>` : ''}
       <div style="line-height:1.15;min-width:0"><div style="font-size:.95em;font-weight:900">${esc(cfg.schoolName)}</div>${kopLines}</div>
     </div>
     <div style="text-align:center;font-size:.85em;font-weight:900;color:#064e3b;margin:.5em .9em 0;padding-bottom:.2em;border-bottom:1px solid #a7f3d0;flex:none">KARTU ANGGOTA PERPUSTAKAAN</div>
@@ -856,7 +816,7 @@ function cardFront(m, cfg = S()) {
         <img src="${barcode(m.MemberID)}" style="display:block;width:100%;height:2.4em;margin-top:.2em"/>
         <div style="font-size:.7em;font-family:monospace;font-weight:bold;color:#064e3b;text-align:center">${esc(m.MemberID)}</div>
       </div>
-    </div>`, cfg.cardBgFront, cfg.cardBgOpacity, cfg.cardFont, cfg);
+    </div>`, cfg.cardBgFront, cfg.cardBgOpacity, cfg.cardFont);
 }
 
 // ----- SISI BELAKANG: tata tertib (dapat dikustomisasi) + titimangsa + QR ttd Kepala Perpustakaan & Kepala Madrasah + quotes -----
@@ -864,8 +824,6 @@ function cardBack(m, cfg = S()) {
   const d = cardDim(cfg), headerColor = esc(cfg.cardHeaderColor || DEF.cardHeaderColor);
   const rules = String(cfg.cardRules || DEF.cardRules).split('\n').map(s => s.trim()).filter(Boolean);
   const dateLine = (cfg.city || '').trim() ? `${esc(cfg.city.trim())}, ${fmtDate(new Date())}` : '';
-  const spaceDateSign = N(cfg.cardSpaceDateSign !== undefined && cfg.cardSpaceDateSign !== '' ? cfg.cardSpaceDateSign : DEF.cardSpaceDateSign);
-  const spaceSignQuote = N(cfg.cardSpaceSignQuote !== undefined && cfg.cardSpaceSignQuote !== '' ? cfg.cardSpaceSignQuote : DEF.cardSpaceSignQuote);
   const sg = (role, name) => { const q = qrImg('Ttd ' + role + ': ' + (name || '-') + ' | ' + (cfg.schoolName || '')); return `<div style="text-align:center;font-size:.58em;font-weight:800;display:flex;flex-direction:column;align-items:center"><div>${role}</div>${q ? `<img src="${q}" style="width:4.1em;height:4.1em;margin:.15em 0"/>` : '<div style="height:4.1em"></div>'}<div style="text-decoration:underline">${esc(name || '..................')}</div></div>`; };
   const quote = String(cfg.cardQuote !== undefined ? cfg.cardQuote : DEF.cardQuote).trim();
   const quoteAuthor = String(cfg.cardQuoteAuthor !== undefined ? cfg.cardQuoteAuthor : DEF.cardQuoteAuthor).trim();
@@ -874,9 +832,9 @@ function cardBack(m, cfg = S()) {
     <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding:.45em .9em .3em">
       <div>${rules.map((r, i) => `<div style="font-size:.6em;font-weight:600;line-height:1.3;margin-bottom:.15em;color:#1e293b">${i + 1}. ${esc(r)}</div>`).join('')}</div>
       ${dateLine ? `<div style="text-align:right;font-size:.58em;font-weight:700;color:#1e293b;margin-top:.3em">${dateLine}</div>` : ''}
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0 .3em;margin-top:${spaceDateSign}em">${sg('Kepala Perpustakaan', cfg.librarian)}${sg('Kepala Madrasah', cfg.headmaster)}</div>
-      ${quote ? `<div style="text-align:center;font-size:.5em;font-style:italic;line-height:1.3;margin-top:${spaceSignQuote}em;padding:0 .2em;color:#334155">&ldquo;${esc(quote)}&rdquo;${quoteAuthor ? `<div style="font-weight:800;font-style:normal;margin-top:.1em;color:#064e3b">&mdash; ${esc(quoteAuthor)}</div>` : ''}</div>` : ''}
-    </div>`, cfg.cardBgBack, cfg.cardBgOpacity, cfg.cardFont, cfg);
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0 .3em;margin-top:.55em">${sg('Kepala Perpustakaan', cfg.librarian)}${sg('Kepala Madrasah', cfg.headmaster)}</div>
+      ${quote ? `<div style="text-align:center;font-size:.5em;font-style:italic;line-height:1.3;margin-top:.55em;padding:0 .2em;color:#334155">&ldquo;${esc(quote)}&rdquo;${quoteAuthor ? `<div style="font-weight:800;font-style:normal;margin-top:.1em;color:#064e3b">&mdash; ${esc(quoteAuthor)}</div>` : ''}</div>` : ''}
+    </div>`, cfg.cardBgBack, cfg.cardBgOpacity, cfg.cardFont);
 }
 // 1 file PDF per anggota = 2 halaman (depan, belakang), ukuran halaman = ukuran kartu
 const cardBlob = m => { const { w, h } = cardSize(); return pdfWork([`<div>${cardFront(m)}</div>`, `<div>${cardBack(m)}</div>`], cardOpt(w, h), true); };
@@ -908,7 +866,7 @@ function settingsHTML() {
     ${sec('building-2','Profil Instansi','Create your own custom',`<div class="space-y-4">${f('schoolName','Nama Sekolah')}${f('libraryName','Nama Perpustakaan')}${f('address','Alamat')}<div class="grid grid-cols-2 gap-4">${f('contact','Telepon / Email')}${f('city','Kota (titimangsa laporan & kartu)')}</div><div class="grid grid-cols-2 gap-4">${f('headmaster','Nama Kepala Sekolah')}${f('librarian','Nama Petugas Perpustakaan')}</div><div class="grid grid-cols-2 gap-4">${imgField('logoLeft','Logo Kiri')}${imgField('logoRight','Logo Kanan')}</div></div>`)}
     ${sec('repeat','Pengaturan Pinjaman','Aturan durasi peminjaman dan denda keterlambatan.',`<div class="grid grid-cols-2 gap-4">${f('loanDurationDays','Durasi Pinjam (Hari)','number','','min="1"')}${f('finePerDay','Denda / Hari (Rp)','number','','min="0"')}</div>`)}
     ${sec('tags','Jenis / Kategori Buku & E-Book','Satu kategori per baris. Dipakai pada pilihan kategori buku, E-Book (termasuk pengelompokan rak E-Book), dan template Excel.',`<textarea id="set-bookCategories" rows="5" class="inp" placeholder="Pendidikan&#10;Sains&#10;Novel"></textarea>`)}
-    ${sec('credit-card','Pengaturan Cetak Kartu','Sesuaikan tampilan, warna, font, jarak elemen, dan isi tata tertib kartu anggota',`<div class="grid md:grid-cols-2 gap-6"><div class="space-y-4"><div><label class="lbl">Preset Ukuran</label><select id="set-preset" onchange="applyPreset()" class="inp"><option value="85.6x54">ID Card Landscape — 85,6 × 54 mm</option><option value="54x85.6">ID Card Portrait — 54 × 85,6 mm</option><option value="custom">Kustom</option></select></div><div class="grid grid-cols-2 gap-4">${f('cardWidth','Lebar (mm)','number','','min="30" max="210" step="0.1"')}${f('cardHeight','Tinggi (mm)','number','','min="30" max="210" step="0.1"')}</div>${imgField('cardBgFront','Background Sisi Depan')}${imgField('cardBgBack','Background Sisi Belakang')}<div><label class="lbl">Opasitas Background: <span id="opacity-val">${DEF.cardBgOpacity}</span>%</label><input id="set-cardBgOpacity" type="range" min="0" max="100" oninput="$('opacity-val').innerText=this.value" class="w-full"/></div><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Warna Background Kop Kartu</label><input id="set-cardHeaderColor" type="color" class="inp !p-1 !h-12 cursor-pointer"/></div><div><label class="lbl">Font Kartu</label><select id="set-cardFont" class="inp">${FONT_OPTS.map(o => `<option value="${o[0]}">${o[1]}</option>`).join('')}</select></div></div><div><label class="lbl">Warna Garis Bawah Kartu (list warna)</label><input id="set-cardBottomColors" class="inp" placeholder="#064e3b,#10b981,#064e3b"/><p class="text-[9px] text-slate-400 font-bold mt-1">Pisahkan dengan koma (kode HEX). Minimal 2 warna untuk membuat gradasi.</p></div><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Jarak Titimangsa ↔ TTD (em)</label>${f('cardSpaceDateSign','','number','','min="0" max="5" step="0.05"')}</div><div><label class="lbl">Jarak TTD ↔ Quotes (em)</label>${f('cardSpaceSignQuote','','number','','min="0" max="5" step="0.05"')}</div></div><div><label class="lbl">Isi Tata Tertib (satu poin per baris)</label><textarea id="set-cardRules" rows="5" class="inp" placeholder="Tulis satu poin tata tertib per baris..."></textarea></div><div><label class="lbl">Quotes di Kartu (tampil di bawah ttd)</label><textarea id="set-cardQuote" rows="2" class="inp" placeholder="Contoh: Membaca adalah jendela dunia..."></textarea></div><div><label class="lbl">Sumber / Pembicara Quotes</label><input id="set-cardQuoteAuthor" class="inp" placeholder="Contoh: Anonim, Nabi Muhammad SAW, dll"/></div></div><div><label class="lbl">Pratinjau (data contoh)</label><div id="card-preview" class="mt-1 overflow-auto p-2 bg-slate-50 rounded-xl border flex flex-wrap justify-center gap-3"></div></div></div>`)}
+    ${sec('credit-card','Pengaturan Cetak Kartu','Sesuaikan tampilan, warna, font, dan isi tata tertib kartu anggota',`<div class="grid md:grid-cols-2 gap-6"><div class="space-y-4"><div><label class="lbl">Preset Ukuran</label><select id="set-preset" onchange="applyPreset()" class="inp"><option value="85.6x54">ID Card Landscape — 85,6 × 54 mm</option><option value="54x85.6">ID Card Portrait — 54 × 85,6 mm</option><option value="custom">Kustom</option></select></div><div class="grid grid-cols-2 gap-4">${f('cardWidth','Lebar (mm)','number','','min="30" max="210" step="0.1"')}${f('cardHeight','Tinggi (mm)','number','','min="30" max="210" step="0.1"')}</div>${imgField('cardBgFront','Background Sisi Depan')}${imgField('cardBgBack','Background Sisi Belakang')}<div><label class="lbl">Opasitas Background: <span id="opacity-val">${DEF.cardBgOpacity}</span>%</label><input id="set-cardBgOpacity" type="range" min="0" max="100" oninput="$('opacity-val').innerText=this.value" class="w-full"/></div><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Warna Background Kop Kartu</label><input id="set-cardHeaderColor" type="color" class="inp !p-1 !h-12 cursor-pointer"/></div><div><label class="lbl">Font Kartu</label><select id="set-cardFont" class="inp">${FONT_OPTS.map(o => `<option value="${o[0]}">${o[1]}</option>`).join('')}</select></div></div><div><label class="lbl">Isi Tata Tertib (satu poin per baris)</label><textarea id="set-cardRules" rows="5" class="inp" placeholder="Tulis satu poin tata tertib per baris..."></textarea></div><div><label class="lbl">Quotes di Kartu (tampil di bawah ttd)</label><textarea id="set-cardQuote" rows="2" class="inp" placeholder="Contoh: Membaca adalah jendela dunia..."></textarea></div><div><label class="lbl">Sumber / Pembicara Quotes</label><input id="set-cardQuoteAuthor" class="inp" placeholder="Contoh: Anonim, Nabi Muhammad SAW, dll"/></div></div><div><label class="lbl">Pratinjau (data contoh)</label><div id="card-preview" class="mt-1 overflow-auto p-2 bg-slate-50 rounded-xl border flex flex-wrap justify-center gap-3"></div></div></div>`)}
     <button class="btn platinum-gradient w-full py-4 tracking-widest">SIMPAN PENGATURAN</button></form>`;
 }
 const SETTING_UPLOAD_TYPE = { logoLeft:'logo_left', logoRight:'logo_right', cardBgFront:'card_bg_front', cardBgBack:'card_bg_back' };
@@ -960,13 +918,17 @@ function refreshPreview() {
   const el = $('card-preview'); if (!el) return;
   const m = { Name:'Nama Siswa Contoh', Class:'7A', MemberID:'0012345678', PhotoUrl:'' }, c = formSettings(); el.innerHTML = cardFront(m, c) + cardBack(m, c);
 }
-async function submitSettings(e) {
-  e.preventDefault();
+function getSettingsPayload() {
   const p = formSettings(), { w, h } = cardSize(p);
   p.cardWidth = w; p.cardHeight = h;
+  return p;
+}
+async function submitSettings(e) {
+  e.preventDefault();
+  const p = getSettingsPayload();
   showLoader(true, 'Menyimpan pengaturan...');
   const res = await apiCall('save_settings', p);
-  if (res) await refresh(res.message); else showLoader(false);
+  if (res) { appState.settings = p; await refresh(res.message); } else showLoader(false);
 }
 
 window.addEventListener('load', () => { buildNav(); initPwa(); initApp(); });
