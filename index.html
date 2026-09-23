@@ -1000,14 +1000,95 @@ async function submitCirc(e) {
 }
 
 // ---------- Scanner ----------
-function openScanner(id) {
+// =====================================================================
+// SCANNER KAMERA + PENANGANAN IZIN — ganti fungsi openScanner(id) lama dengan blok ini
+// (closeScanner() tetap dipakai seperti semula)
+// =====================================================================
+
+// Minta izin kamera secara eksplisit lebih dulu. Ini yang memunculkan popup "Izinkan kamera?" di browser.
+async function ensureCamera() {
+  if (!window.isSecureContext) { const e = new Error('insecure'); e.name = 'InsecureContext'; throw e; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { const e = new Error('nosupport'); e.name = 'NotSupported'; throw e; }
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } }); }
+  catch (err) {
+    // kamera belakang tidak ada / constraint ditolak -> coba kamera apa saja
+    if (err.name === 'OverconstrainedError' || err.name === 'NotFoundError') stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    else throw err;
+  }
+  stream.getTracks().forEach(t => t.stop()); // izin sudah didapat, lepas kamera agar bisa dipakai html5-qrcode
+}
+
+function cameraHelp(err, targetId) {
+  const n = (err && err.name) || '';
+  const ua = navigator.userAgent || '';
+  const inApp = /FBAN|FBAV|Instagram|Line\/|MicroMessenger|WhatsApp|TikTok/i.test(ua);
+  const msg = {
+    NotAllowedError: 'Izin kamera ditolak atau diblokir untuk situs ini. Browser tidak mengizinkan situs meminta ulang izin yang sudah ditolak, jadi izin harus diaktifkan manual:',
+    PermissionDeniedError: 'Izin kamera ditolak atau diblokir untuk situs ini:',
+    NotFoundError: 'Kamera tidak ditemukan di perangkat ini.',
+    NotReadableError: 'Kamera sedang dipakai aplikasi lain. Tutup aplikasi/tab lain yang memakai kamera, lalu coba lagi.',
+    InsecureContext: 'Kamera hanya bisa dipakai lewat alamat HTTPS. Buka aplikasi lewat https://.',
+    NotSupported: 'Browser ini tidak mendukung akses kamera. Gunakan Chrome / Safari terbaru.'
+  }[n] || 'Kamera tidak dapat diakses (' + (n || 'error tidak dikenal') + ').';
+  const steps = (n === 'NotAllowedError' || n === 'PermissionDeniedError') ? `
+    <ol style="text-align:left;font-size:12px;margin:10px 0 0 18px;line-height:1.6">
+      ${inApp ? '<li><b>Anda memakai browser di dalam aplikasi</b> (WhatsApp/Facebook/dll). Buka menu ⋮ lalu pilih <b>Buka di Chrome / Safari</b>.</li>' : ''}
+      <li><b>Chrome Android:</b> ketuk ikon gembok/tune di sebelah alamat → <b>Izin</b> → <b>Kamera</b> → <b>Izinkan</b>.</li>
+      <li><b>Safari iPhone:</b> ketuk <b>aA</b> di alamat → <b>Pengaturan Situs Web</b> → <b>Kamera</b> → <b>Izinkan</b>.</li>
+      <li><b>Chrome Desktop:</b> klik ikon gembok di alamat → <b>Setelan situs</b> → Kamera → <b>Izinkan</b>.</li>
+      <li>Muat ulang halaman, lalu tekan ikon kamera lagi.</li>
+    </ol>` : '';
+  return Swal.fire({
+    icon: 'warning', title: 'Kamera Tidak Bisa Dipakai',
+    html: `<p style="font-size:13px">${msg}</p>${steps}`,
+    showCancelButton: true, showDenyButton: true,
+    confirmButtonText: 'Coba Lagi', denyButtonText: 'Foto Barcode', cancelButtonText: 'Ketik Manual',
+    confirmButtonColor: '#059669', denyButtonColor: '#334155', cancelButtonColor: '#64748b'
+  }).then(r => {
+    if (r.isConfirmed) openScanner(targetId);
+    else if (r.isDenied) scanFromPhoto(targetId);
+    else { const el = $(targetId); if (el) el.focus(); }
+  });
+}
+
+// Cadangan tanpa izin kamera langsung: ambil foto barcode lewat kamera bawaan HP / pilih gambar, lalu dibaca.
+function scanFromPhoto(id) {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*'; inp.setAttribute('capture', 'environment');
+  inp.onchange = async () => {
+    const f = inp.files[0]; if (!f) return;
+    let host = document.getElementById('reader-file');
+    if (!host) { host = document.createElement('div'); host.id = 'reader-file'; host.style.cssText = 'position:fixed;left:-9999px;top:0;width:300px'; document.body.appendChild(host); }
+    try {
+      showLoader(true, 'Membaca barcode...');
+      const h = new Html5Qrcode('reader-file');
+      const t = await h.scanFile(f, false);
+      showLoader(false);
+      const el = $(id); if (el) el.value = t.trim().replace(/\s/g, '_');
+      showToast('Terbaca: ' + t);
+    } catch (e) { showLoader(false); showToast('Barcode tidak terbaca. Foto lebih dekat, terang, dan tegak lurus.', true); }
+  };
+  inp.click();
+}
+
+async function openScanner(id) {
   if (!window.Html5Qrcode) return showToast('Library scanner lambat dimuat.', true);
-  scanTarget = id; $('scanner-modal').classList.remove('hide');
-  if (!qr) { const F = Html5QrcodeSupportedFormats; qr = new Html5Qrcode('reader', { formatsToSupport:[F.CODE_128,F.CODE_39,F.EAN_13,F.QR_CODE] }); }
-  qr.start({ facingMode:'environment' }, { fps:15, qrbox:{ width:250, height:120 } }, t => {
-    const e = $(scanTarget); if (e) e.value = t.trim().replace(/\s/g,'_');
-    showToast('Terbaca: ' + t); closeScanner();
-  }, () => {}).catch(() => { showToast('Kamera tidak diizinkan/ditemukan.', true); closeScanner(); });
+  scanTarget = id;
+  try { await ensureCamera(); }
+  catch (err) { scanTarget = null; return cameraHelp(err, id); }
+  $('scanner-modal').classList.remove('hide');
+  if (!qr) { const F = Html5QrcodeSupportedFormats; qr = new Html5Qrcode('reader', { formatsToSupport: [F.CODE_128, F.CODE_39, F.EAN_13, F.QR_CODE] }); }
+  const onOk = t => { const e = $(scanTarget); if (e) e.value = t.trim().replace(/\s/g, '_'); showToast('Terbaca: ' + t); closeScanner(); };
+  const cfg = { fps: 15, qrbox: { width: 250, height: 120 } };
+  try { await qr.start({ facingMode: 'environment' }, cfg, onOk, () => {}); }
+  catch (e1) {
+    try { // cadangan: pilih kamera pertama yang terdaftar
+      const cams = await Html5Qrcode.getCameras();
+      if (!cams.length) throw e1;
+      await qr.start(cams[cams.length - 1].id, cfg, onOk, () => {});
+    } catch (e2) { closeScanner(); cameraHelp(e2, id); }
+  }
 }
 function closeScanner() { $('scanner-modal').classList.add('hide'); if (qr) qr.stop().catch(() => {}); scanTarget = null; }
 
