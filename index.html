@@ -291,7 +291,7 @@ async function initApp() {
   } catch (e) { appState.setupError = true; }
   finally { showLoader(false); }
   switchTab(appState.activeTab);
-  applyPwaSettings();
+  await applyPwaSettings();
 }
 
 // ---------- PWA ----------
@@ -315,9 +315,44 @@ function pwaIcon(sz, color, radiusPct) {
   [[4,4,4,20],[8,8,8,20],[12,6,12,20],[16,6,20,20]].forEach(a => { x.beginPath(); x.moveTo(a[0]/24*sz,a[1]/24*sz); x.lineTo(a[2]/24*sz,a[3]/24*sz); x.stroke(); });
   return c.toDataURL('image/png');
 }
+function loadImageEl(url) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => res(img);
+    img.onerror = () => rej(new Error('Gagal memuat gambar icon.'));
+    img.src = url;
+  });
+}
+// Membuat bitmap icon PNG (persegi, sisi sz) dengan sudut dipotong sesuai radiusPct (0-50%), baik dari
+// gambar yang diupload (iconUrl) maupun icon otomatis (gradient) jika iconUrl kosong. Diproses lewat canvas
+// agar radius benar-benar "terbakar" ke dalam bitmap, sehingga berlaku juga untuk icon shortcut/homescreen &
+// favicon (yang dirender native oleh OS/browser dan tidak terpengaruh CSS border-radius pada halaman web).
+async function roundedIconDataUrl(iconUrl, sz, radiusPct, themeColor) {
+  const rp = Math.max(0, Math.min(50, N(radiusPct !== undefined && radiusPct !== '' ? radiusPct : DEF.pwaIconRadius)));
+  if (!iconUrl) return pwaIcon(sz, themeColor, rp);
+  try {
+    const img = await loadImageEl(iconUrl);
+    const c = document.createElement('canvas'); c.width = c.height = sz;
+    const ctx = c.getContext('2d');
+    ctx.save();
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(0, 0, sz, sz, sz * rp / 100); else ctx.rect(0, 0, sz, sz);
+    ctx.closePath();
+    ctx.clip();
+    const scale = Math.max(sz / img.naturalWidth, sz / img.naturalHeight);
+    const w = img.naturalWidth * scale, h = img.naturalHeight * scale;
+    ctx.drawImage(img, (sz - w) / 2, (sz - h) / 2, w, h);
+    ctx.restore();
+    return c.toDataURL('image/png');
+  } catch (e) {
+    console.warn('Gagal menerapkan radius ke icon (kemungkinan gambar diblokir CORS oleh Drive), memakai icon asli tanpa radius.', e);
+    return iconUrl; // fallback: pakai icon asli apa adanya agar icon tetap tampil
+  }
+}
 // Menerapkan nama, warna tema, dan icon aplikasi PWA sesuai Pengaturan (manifest dibuat ulang secara dinamis
 // setiap kali data dimuat, agar perubahan di menu Pengaturan langsung berlaku tanpa perlu deploy ulang manifest.json).
-function applyPwaSettings() {
+async function applyPwaSettings() {
   try {
     const s = S();
     const name = (s.pwaName || DEF.pwaName || '').trim() || DEF.pwaName;
@@ -332,10 +367,9 @@ function applyPwaSettings() {
     const setMeta = (sel, val) => { const m = document.querySelector(sel); if (m) m.content = val; };
     setMeta('meta[name="theme-color"]', themeColor);
     setMeta('meta[name="apple-mobile-web-app-title"]', shortName);
-    const icon192 = iconUrl || pwaIcon(192, themeColor, iconRadius);
-    const icon512 = iconUrl || pwaIcon(512, themeColor, iconRadius);
-    const iconType = iconUrl ? (/\.png(\?|$)/i.test(iconUrl) ? 'image/png' : /\.(jpe?g)(\?|$)/i.test(iconUrl) ? 'image/jpeg' : /\.svg(\?|$)/i.test(iconUrl) ? 'image/svg+xml' : 'image/png') : 'image/png';
-    const man = { name, short_name: shortName, start_url: location.href.split('#')[0].split('?')[0], scope:'./', display: displayMode, orientation: orientation, background_color: bgColor, theme_color: themeColor, icons:[{src:icon192,sizes:'192x192',type:iconType,purpose:'any'},{src:icon512,sizes:'512x512',type:iconType,purpose:'any'},{src:icon512,sizes:'512x512',type:iconType,purpose:'maskable'}] };
+    const icon192 = await roundedIconDataUrl(iconUrl, 192, iconRadius, themeColor);
+    const icon512 = await roundedIconDataUrl(iconUrl, 512, iconRadius, themeColor);
+    const man = { name, short_name: shortName, start_url: location.href.split('#')[0].split('?')[0], scope:'./', display: displayMode, orientation: orientation, background_color: bgColor, theme_color: themeColor, icons:[{src:icon192,sizes:'192x192',type:'image/png',purpose:'any'},{src:icon512,sizes:'512x512',type:'image/png',purpose:'any'},{src:icon512,sizes:'512x512',type:'image/png',purpose:'maskable'}] };
     const old = document.querySelector('link[rel="manifest"]'); if (old) old.remove();
     const l = document.createElement('link'); l.rel = 'manifest'; l.href = URL.createObjectURL(new Blob([JSON.stringify(man)],{type:'application/manifest+json'})); document.head.appendChild(l);
     let a = document.querySelector('link[rel="apple-touch-icon"]');
@@ -343,6 +377,7 @@ function applyPwaSettings() {
     a.href = icon192;
     let fav = document.querySelector('link[rel="icon"]');
     if (!fav) { fav = document.createElement('link'); fav.rel = 'icon'; document.head.appendChild(fav); }
+    fav.setAttribute('type', 'image/png');
     fav.href = icon192;
     // Terapkan juga ke icon & nama aplikasi di sidebar
     const sideName = document.getElementById('sidebar-app-name');
@@ -352,7 +387,7 @@ function applyPwaSettings() {
     const sideFallback = document.getElementById('sidebar-app-icon-fallback');
     if (sideBox) sideBox.style.borderRadius = iconRadius + '%';
     if (iconUrl) {
-      if (sideImg) { sideImg.src = iconUrl; sideImg.classList.remove('hide'); }
+      if (sideImg) { sideImg.src = icon192; sideImg.classList.remove('hide'); }
       if (sideFallback) sideFallback.classList.add('hide');
       if (sideBox) sideBox.style.background = 'transparent';
     } else {
@@ -1166,7 +1201,7 @@ function cardFront(m, cfg = S()) {
       <img src="${photo}" crossorigin="anonymous" style="width:${pw}px;height:${ph}px;object-fit:cover;border:2px solid #e2e8f0;border-radius:4px;flex:none"/>
       <div style="flex:1;min-width:0;width:100%">
         <table style="border-collapse:collapse;font-size:.68em;font-weight:800;line-height:1.3;color:#1e293b">${row('NAMA', m.Name)}${row('NISN', m.MemberID)}${row('KELAS', m.Class)}</table>
-        <img src="${barcode(m.MemberID)}" style="display:block;width:100%;height:2.4em;margin-top:.2em"/>
+        <img src="${barcode(m.MemberID)}" style="display:block;width:100%;height:9em;margin-top:.2em"/>
         <div style="font-size:.7em;font-family:monospace;font-weight:bold;color:#064e3b;text-align:center">${esc(m.MemberID)}</div>
       </div>
     </div>`, cfg.cardBgFront, cfg.cardBgOpacity, cfg.cardFont, cfg);
