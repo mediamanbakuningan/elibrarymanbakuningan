@@ -988,7 +988,6 @@ function circHTML() {
     ${inp('circ-book','ID / Barcode BUKU','Scan Buku...',v)}${inp('circ-member','ID / Barcode ANGGOTA','Scan Kartu Siswa...',false)}
     <button class="btn platinum-gradient w-full py-4 tracking-widest">PROSES ${v?'KUNJUNGAN':'TRANSAKSI'}</button></form></div>`;
 }
-function setScanMode(m) { scanMode = m; renderView(); }
 // =====================================================================
 // NOTIF SUKSES / GAGAL SCAN — pinjam, kembali, masuk
 // Letakkan blok ini menggantikan fungsi submitCirc(e) lama (di bagian "Sirkulasi")
