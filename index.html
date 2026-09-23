@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.json" />
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/dist/JsBarcode.all.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
@@ -411,7 +411,7 @@ async function payFine(loanId) {
 
 // ---------- Buku ----------
 function booksHTML() {
-  return `<div class="card"><div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4"><h3 class="text-lg md:text-xl font-black text-slate-800 w-full">Katalog Pustaka</h3><div class="flex w-full md:w-auto gap-2 flex-wrap"><button onclick="downloadExcelTemplateBooks()" class="btn !shadow-none flex-1 md:flex-none bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-2 !text-xs"><i data-lucide="download" class="w-4 h-4"></i> Template</button><label class="btn platinum-gradient flex-1 md:flex-none flex items-center justify-center gap-2 cursor-pointer !text-xs"><i data-lucide="upload" class="w-4 h-4"></i> Upload Excel<input type="file" accept=".xlsx,.xls" class="hidden" onchange="handleExcelUploadBooks(event)"></label><button onclick="openBookModal()" class="btn bg-emerald-800 text-white flex items-center gap-2 justify-center"><i data-lucide="plus" class="w-5 h-5"></i></button></div></div>
+  return `<div class="card"><div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4"><h3 class="text-lg md:text-xl font-black text-slate-800 w-full">Katalog Pustaka</h3><div class="flex w-full md:w-auto gap-2 flex-wrap justify-end"><button onclick="downloadExcelTemplateBooks()" title="Template" class="btn !shadow-none !px-3.5 bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center"><i data-lucide="download" class="w-4 h-4"></i></button><label title="Upload Excel" class="btn platinum-gradient !px-3.5 flex items-center justify-center cursor-pointer"><i data-lucide="upload" class="w-4 h-4"></i><input type="file" accept=".xlsx,.xls" class="hidden" onchange="handleExcelUploadBooks(event)"></label><button onclick="openBookModal()" title="Tambah Buku" class="btn bg-emerald-800 text-white flex items-center gap-2 justify-center"><i data-lucide="plus" class="w-5 h-5"></i></button></div></div>
     <div class="relative mb-6">
       <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
       <input id="book-search" type="text" value="${esc(bookSearch)}" oninput="filterBooks(this.value)" placeholder="Cari judul, penulis, kategori, atau barcode/ISBN..." class="inp !pl-11"/>
@@ -494,8 +494,7 @@ async function handleExcelUploadBooks(e) {
 
 // ---------- Anggota ----------
 function membersHTML() {
-  return `<div class="card"><div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4"><h3 class="font-black text-slate-800 text-lg md:text-xl w-full">Daftar Anggota Aktif</h3><div class="flex w-full md:w-auto gap-2 flex-wrap"><button onclick="downloadExcelTemplate()" class="btn !shadow-none flex-1 md:flex-none bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-2 !text-xs"><i data-lucide="download" class="w-4 h-4"></i> Template</button><label class="btn platinum-gradient flex-1 md:flex-none flex items-center justify-center gap-2 cursor-pointer !text-xs"><i data-lucide="upload" class="w-4 h-4"></i> Upload Excel<input type="file" accept=".xlsx,.xls" class="hidden" onchange="handleExcelUpload(event)"></label><label class="btn bg-purple-700 text-white flex-1 md:flex-none flex items-center justify-center gap-2 cursor-pointer !text-xs" title="Pilih folder berisi foto anggota. Nama file foto harus berupa NISN, Nama Lengkap, atau Nomor Urut anggota di database."><i data-lucide="images" class="w-4 h-4"></i> Upload Foto Massal<input type="file" webkitdirectory directory multiple accept="image/*" class="hidden" onchange="handleBulkPhotoUpload(event)"></label><button onclick="openMemberModal()" class="btn bg-emerald-800 text-white"><i data-lucide="plus" class="w-5 h-5"></i></button></div></div>
-    <p class="text-[10px] text-slate-400 font-bold -mt-2 mb-4">*Upload Foto Massal: pilih folder berisi file foto, penamaan file = NISN, Nama Lengkap, atau Nomor Urut anggota sesuai urutan di database (contoh: 0012345678.jpg, Ahmad Fauzi.jpg, atau 1.jpg / 2.jpg / 3.jpg ...).</p>
+  return `<div class="card"><div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4"><h3 class="font-black text-slate-800 text-lg md:text-xl w-full">Daftar Anggota Aktif</h3><div class="flex w-full md:w-auto gap-2 flex-wrap justify-end"><button onclick="downloadExcelTemplate()" title="Template" class="btn !shadow-none !px-3.5 bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center"><i data-lucide="download" class="w-4 h-4"></i></button><label title="Upload Excel" class="btn platinum-gradient !px-3.5 flex items-center justify-center cursor-pointer"><i data-lucide="upload" class="w-4 h-4"></i><input type="file" accept=".xlsx,.xls" class="hidden" onchange="handleExcelUpload(event)"></label><label title="Upload Foto Massal" class="btn bg-purple-700 text-white !px-3.5 flex items-center justify-center cursor-pointer"><i data-lucide="images" class="w-4 h-4"></i><input type="file" webkitdirectory directory multiple accept="image/*" class="hidden" onchange="handleBulkPhotoUpload(event)"></label><button onclick="openMemberModal()" title="Tambah Anggota" class="btn bg-emerald-800 text-white"><i data-lucide="plus" class="w-5 h-5"></i></button></div></div>
     <div class="relative mb-6">
       <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
       <input id="member-search" type="text" value="${esc(memberSearch)}" oninput="filterMembers(this.value)" placeholder="Cari nama, kelas, atau ID/NISN anggota..." class="inp !pl-11"/>
@@ -643,9 +642,14 @@ function ebooksHTML() {
   return `<div class="card">
     <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
       <h3 class="font-black text-slate-800 text-lg md:text-xl w-full">Perpustakaan Digital (E-Book)</h3>
-      <div class="flex w-full md:w-auto gap-2 flex-wrap justify-end"><button onclick="downloadExcelTemplateEbooks()" class="btn !shadow-none flex-1 md:flex-none bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-2 !text-xs"><i data-lucide="download" class="w-4 h-4"></i> Template</button><label class="btn platinum-gradient flex-1 md:flex-none flex items-center justify-center gap-2 cursor-pointer !text-xs"><i data-lucide="upload" class="w-4 h-4"></i> Upload Excel<input type="file" accept=".xlsx,.xls" class="hidden" onchange="handleExcelUploadEbooks(event)"></label><button onclick="openEbookModal()" class="btn bg-emerald-800 text-white flex items-center gap-2 justify-center whitespace-nowrap"><i data-lucide="plus" class="w-5 h-5"></i> Tambah E-Book</button></div>
+      <div class="flex w-full md:w-auto gap-2 flex-wrap justify-end">
+        <button onclick="downloadExcelTemplateEbooks()" title="Template" class="btn !shadow-none !px-3.5 bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center"><i data-lucide="download" class="w-4 h-4"></i></button>
+        <label title="Upload Excel" class="btn platinum-gradient !px-3.5 flex items-center justify-center cursor-pointer"><i data-lucide="upload" class="w-4 h-4"></i><input type="file" accept=".xlsx,.xls" class="hidden" onchange="handleExcelUploadEbooks(event)"></label>
+        <label title="Upload Cover Massal (nama file = Kode E-Book)" class="btn bg-teal-700 text-white !px-3.5 flex items-center justify-center cursor-pointer"><i data-lucide="images" class="w-4 h-4"></i><input type="file" multiple accept="image/*" class="hidden" onchange="handleBulkCoverUpload(event)"></label>
+        <label title="Upload PDF Massal (nama file = Kode E-Book)" class="btn bg-purple-700 text-white !px-3.5 flex items-center justify-center cursor-pointer"><i data-lucide="file-up" class="w-4 h-4"></i><input type="file" multiple accept="application/pdf" class="hidden" onchange="handleBulkPdfUpload(event)"></label>
+        <button onclick="openEbookModal()" title="Tambah E-Book" class="btn bg-emerald-800 text-white flex items-center gap-2 justify-center"><i data-lucide="plus" class="w-5 h-5"></i></button>
+      </div>
     </div>
-    <p class="text-[10px] text-slate-400 font-bold -mt-2 mb-4">*Upload Excel E-Book Massal: kolom Judul, Kategori, Penulis. Kode E-Book dibuat otomatis; cover &amp; file PDF tetap perlu diunggah manual per judul lewat tombol edit (pensil).</p>
     <div class="relative mb-6">
       <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
       <input id="ebook-search" type="text" value="${esc(ebookSearch)}" oninput="filterEbooks(this.value)" placeholder="Cari judul, penulis, kode, atau kategori E-Book..." class="inp !pl-11"/>
@@ -757,6 +761,87 @@ async function handleExcelUploadEbooks(e) {
     if (res) await refresh(res.message); else showLoader(false);
   } catch (err) { showLoader(false); showToast(err.message, true); }
   e.target.value = '';
+}
+
+// ---------- Upload PDF Massal E-Book (file dicocokkan ke Kode E-Book berdasarkan nama file) ----------
+async function handleBulkPdfUpload(e) {
+  const allFiles = Array.from(e.target.files || []);
+  const files = allFiles.filter(f => f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
+  e.target.value = '';
+  if (!appState.ebooks.length) return showToast('Belum ada data E-Book untuk dicocokkan.', true);
+  if (!files.length) return showToast('Tidak ada file PDF yang ditemukan.', true);
+
+  const byCode = {};
+  appState.ebooks.forEach(bk => { byCode[normPhotoKey(bk.Code)] = bk; });
+
+  const r = await Swal.fire({ icon:'question', title:'Upload PDF Massal', html:`Ditemukan <b>${files.length}</b> file PDF.<br>Sistem akan mencocokkan tiap nama file ke <b>Kode E-Book</b> (contoh: EB-001.pdf), lalu mengunggahnya satu per satu.<br><br>Lanjutkan?`, showCancelButton:true, confirmButtonColor:'#7e22ce', cancelButtonColor:'#64748b', confirmButtonText:'Ya, Proses', cancelButtonText:'Batal' });
+  if (!r.isConfirmed) return;
+
+  let ok = 0, unmatched = 0, failed = 0;
+  const problems = [];
+  showLoader(true, `Mengunggah PDF 0/${files.length}`);
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    const t = Swal.getTitle(); if (t) t.textContent = `Mengunggah PDF ${i + 1}/${files.length}`;
+    const bk = byCode[normPhotoKey(f.name)];
+    if (!bk) { unmatched++; problems.push(f.name + ' — kode tidak cocok dengan E-Book manapun'); continue; }
+    try {
+      const res = await apiPost('upload_file', { dataUrl: await fileToDataURL(f), filename: f.name, type:'ebook_pdf', kode: bk.Code, nama: bk.Title });
+      await apiPost('update_ebook', { id: bk.ID, code: bk.Code, title: bk.Title, author: bk.Author, category: bk.Category, coverUrl: bk.CoverUrl, pdfUrl: res.url, pdfFileId: res.id || '' });
+      if (res.shared === false) uploadPrivate = true;
+      bk.PdfUrl = res.url; bk.PdfFileId = res.id || '';
+      ok++;
+    } catch (err) { failed++; problems.push(f.name + ' — ' + err.message); }
+  }
+  showLoader(false);
+  await refresh();
+  warnIfPrivate();
+  const summary = `Berhasil: <b>${ok}</b> PDF` + (unmatched ? `, Tidak cocok: <b>${unmatched}</b>` : '') + (failed ? `, Gagal unggah: <b>${failed}</b>` : '') + '.';
+  Swal.fire({
+    icon: (unmatched || failed) ? 'warning' : 'success',
+    title: 'Upload PDF Massal Selesai',
+    html: `<p style="font-size:13px">${summary}</p>` + (problems.length ? `<div style="max-height:160px;overflow:auto;text-align:left;font-size:11px;margin-top:10px;background:#f8fafc;padding:8px;border-radius:8px;border:1px solid #e2e8f0">${problems.map(x => esc(x)).join('<br>')}</div>` : '')
+  });
+}
+
+// ---------- Upload Cover Massal E-Book (file dicocokkan ke Kode E-Book berdasarkan nama file) ----------
+async function handleBulkCoverUpload(e) {
+  const allFiles = Array.from(e.target.files || []);
+  const files = allFiles.filter(f => f.type.startsWith('image/'));
+  e.target.value = '';
+  if (!appState.ebooks.length) return showToast('Belum ada data E-Book untuk dicocokkan.', true);
+  if (!files.length) return showToast('Tidak ada file gambar yang ditemukan.', true);
+
+  const byCode = {};
+  appState.ebooks.forEach(bk => { byCode[normPhotoKey(bk.Code)] = bk; });
+
+  const r = await Swal.fire({ icon:'question', title:'Upload Cover Massal', html:`Ditemukan <b>${files.length}</b> file gambar.<br>Sistem akan mencocokkan tiap nama file ke <b>Kode E-Book</b> (contoh: EB-001.jpg), lalu mengunggahnya satu per satu.<br><br>Lanjutkan?`, showCancelButton:true, confirmButtonColor:'#0f766e', cancelButtonColor:'#64748b', confirmButtonText:'Ya, Proses', cancelButtonText:'Batal' });
+  if (!r.isConfirmed) return;
+
+  let ok = 0, unmatched = 0, failed = 0;
+  const problems = [];
+  showLoader(true, `Mengunggah cover 0/${files.length}`);
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    const t = Swal.getTitle(); if (t) t.textContent = `Mengunggah cover ${i + 1}/${files.length}`;
+    const bk = byCode[normPhotoKey(f.name)];
+    if (!bk) { unmatched++; problems.push(f.name + ' — kode tidak cocok dengan E-Book manapun'); continue; }
+    try {
+      const url = await uploadImage(f, 'cover ebook', { type:'ebook_cover', kode: bk.Code });
+      await apiPost('update_ebook', { id: bk.ID, code: bk.Code, title: bk.Title, author: bk.Author, category: bk.Category, coverUrl: url, pdfUrl: bk.PdfUrl, pdfFileId: bk.PdfFileId });
+      bk.CoverUrl = url;
+      ok++;
+    } catch (err) { failed++; problems.push(f.name + ' — ' + err.message); }
+  }
+  showLoader(false);
+  await refresh();
+  warnIfPrivate();
+  const summary = `Berhasil: <b>${ok}</b> cover` + (unmatched ? `, Tidak cocok: <b>${unmatched}</b>` : '') + (failed ? `, Gagal unggah: <b>${failed}</b>` : '') + '.';
+  Swal.fire({
+    icon: (unmatched || failed) ? 'warning' : 'success',
+    title: 'Upload Cover Massal Selesai',
+    html: `<p style="font-size:13px">${summary}</p>` + (problems.length ? `<div style="max-height:160px;overflow:auto;text-align:left;font-size:11px;margin-top:10px;background:#f8fafc;padding:8px;border-radius:8px;border:1px solid #e2e8f0">${problems.map(x => esc(x)).join('<br>')}</div>` : '')
+  });
 }
 
 // ---------- Sirkulasi ----------
