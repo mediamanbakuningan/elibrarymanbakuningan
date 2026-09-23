@@ -12,7 +12,6 @@
 <link rel="manifest" href="manifest.json" />
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/dist/JsBarcode.all.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
@@ -75,11 +74,11 @@
     <button id="btn-install-mobile" onclick="installApp()" class="hide lg:hidden fixed z-40 right-4 platinum-gradient p-4 rounded-2xl shadow-2xl" style="bottom:calc(160px + env(safe-area-inset-bottom))" title="Install Aplikasi">
       <i data-lucide="download" class="w-5 h-5 text-white"></i>
     </button>
-   
+
     <button id="btn-refresh-mobile" onclick="forceUpdateApp()" class="lg:hidden fixed z-40 right-4 bg-slate-700 p-4 rounded-2xl shadow-2xl" style="bottom:calc(88px + env(safe-area-inset-bottom))" title="Refresh Aplikasi">
       <i data-lucide="refresh-cw" class="w-5 h-5 text-white"></i>
     </button>
-    
+
     <main id="main-scroll-area" class="flex-1 overflow-y-auto scroll-smooth p-4 md:p-8 z-0 relative w-full">
       <header class="mb-8 header-box flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
@@ -988,6 +987,7 @@ function circHTML() {
     ${inp('circ-book','ID / Barcode BUKU','Scan Buku...',v)}${inp('circ-member','ID / Barcode ANGGOTA','Scan Kartu Siswa...',false)}
     <button class="btn platinum-gradient w-full py-4 tracking-widest">PROSES ${v?'KUNJUNGAN':'TRANSAKSI'}</button></form></div>`;
 }
+function setScanMode(m) { scanMode = m; renderView(); }
 // =====================================================================
 // NOTIF SUKSES / GAGAL SCAN — pinjam, kembali, masuk
 // Letakkan blok ini menggantikan fungsi submitCirc(e) lama (di bagian "Sirkulasi")
@@ -1036,14 +1036,6 @@ async function submitCirc(e) {
   catch (err) { showLoader(false); return circNotify(false, mode, err.message || 'Terjadi kesalahan.', info); }   // input tidak dihapus agar bisa dikoreksi
   await initApp();
   circNotify(true, mode, res.message || 'Transaksi berhasil.', info, res.fine);
-} {
-  e.preventDefault();
-  const memberId = $('circ-member').value.trim(), bookId = $('circ-book').value.trim(), v = scanMode === 'visit';
-  showLoader(true, v ? 'Mencatat kunjungan...' : 'Memproses transaksi...');
-  const res = v ? await apiCall('record_visit', { memberId }) : await apiCall('process_circulation', { bookId, memberId, mode:scanMode });
-  if (!res) return showLoader(false);
-  await initApp();
-  if (res.fine > 0) Swal.fire({ icon:'warning', title:'Ada Denda', text:res.message }); else showToast(res.message);
 }
 
 // ---------- Scanner ----------
@@ -1137,6 +1129,7 @@ async function openScanner(id) {
     } catch (e2) { closeScanner(); cameraHelp(e2, id); }
   }
 }
+
 function closeScanner() { $('scanner-modal').classList.add('hide'); if (qr) qr.stop().catch(() => {}); scanTarget = null; }
 
 // ---------- Laporan ----------
@@ -1378,7 +1371,7 @@ function cardFront(m, cfg = S()) {
       <img src="${photo}" crossorigin="anonymous" style="width:${pw}px;height:${ph}px;object-fit:cover;border:2px solid #e2e8f0;border-radius:4px;flex:none"/>
       <div style="flex:1;min-width:0;width:100%">
         <table style="border-collapse:collapse;font-size:.68em;font-weight:800;line-height:1.3;color:#1e293b">${row('NAMA', m.Name)}${row('NISN', m.MemberID)}${row('KELAS', m.Class)}</table>
-        <img src="${barcode(m.MemberID)}" style="display:block;width:100%;height:3.5em;margin-top:.2em"/>
+        <img src="${barcode(m.MemberID)}" style="display:block;width:100%;height:4.5em;margin-top:.3em"/>
       </div>
     </div>`, cfg.cardBgFront, cfg.cardBgOpacity, cfg.cardFont, cfg);
 }
