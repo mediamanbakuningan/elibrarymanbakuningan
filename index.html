@@ -989,7 +989,55 @@ function circHTML() {
     <button class="btn platinum-gradient w-full py-4 tracking-widest">PROSES ${v?'KUNJUNGAN':'TRANSAKSI'}</button></form></div>`;
 }
 function setScanMode(m) { scanMode = m; renderView(); }
+// =====================================================================
+// NOTIF SUKSES / GAGAL SCAN — pinjam, kembali, masuk
+// Letakkan blok ini menggantikan fungsi submitCirc(e) lama (di bagian "Sirkulasi")
+// =====================================================================
+
+// Bunyi + getar singkat sebagai penanda (nada tinggi = sukses, nada rendah = gagal)
+function beep(ok) {
+  try {
+    const A = window.AudioContext || window.webkitAudioContext;
+    if (A) {
+      const ctx = beep.ctx || (beep.ctx = new A()), o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = ok ? 880 : 220; g.gain.value = 0.15;
+      o.connect(g); g.connect(ctx.destination);
+      o.start(); o.stop(ctx.currentTime + (ok ? 0.12 : 0.35));
+    }
+  } catch (e) {}
+  try { if (navigator.vibrate) navigator.vibrate(ok ? 80 : [120, 60, 120]); } catch (e) {}
+}
+
+const CIRC_LABEL = { loan: 'Peminjaman', return: 'Pengembalian', visit: 'Kunjungan' };
+
+function circNotify(ok, mode, msg, info, fine) {
+  beep(ok);
+  const label = CIRC_LABEL[mode] || 'Transaksi', hasFine = ok && N(fine) > 0, auto = ok && !hasFine;
+  const detail = info ? `<div style="margin-top:10px;font-size:12px;line-height:1.6;text-align:left;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px">${info}</div>` : '';
+  return Swal.fire({
+    icon: !ok ? 'error' : hasFine ? 'warning' : 'success',
+    title: !ok ? label + ' Gagal' : hasFine ? 'Ada Denda' : label + ' Berhasil',
+    html: `<p style="font-size:14px">${esc(msg)}</p>${detail}`,
+    timer: auto ? 2200 : null, timerProgressBar: auto,   // sukses menutup sendiri; gagal / denda harus ditutup manual
+    showConfirmButton: !auto, confirmButtonText: 'OK', confirmButtonColor: ok ? '#059669' : '#dc2626'
+  }).then(() => { const el = $('circ-member'); if (el) el.focus(); });
+}
+
 async function submitCirc(e) {
+  e.preventDefault();
+  const memberId = $('circ-member').value.trim(), bookId = $('circ-book').value.trim(), mode = scanMode, v = mode === 'visit';
+  // nama anggota & buku untuk ditampilkan di notifikasi (diambil dari data yang sudah dimuat)
+  const m = appState.members.find(x => String(x.MemberID) === memberId);
+  const b = v ? null : appState.books.find(x => String(x.ISBN) === bookId || String(x.ID) === bookId);
+  const info = [m ? `<b>Anggota:</b> ${esc(m.Name)} (${esc(m.Class)})` : '', b ? `<b>Buku:</b> ${esc(b.Title)}` : ''].filter(Boolean).join('<br>');
+
+  showLoader(true, v ? 'Mencatat kunjungan...' : 'Memproses transaksi...');
+  let res;
+  try { res = v ? await apiPost('record_visit', { memberId }) : await apiPost('process_circulation', { bookId, memberId, mode }); }
+  catch (err) { showLoader(false); return circNotify(false, mode, err.message || 'Terjadi kesalahan.', info); }   // input tidak dihapus agar bisa dikoreksi
+  await initApp();
+  circNotify(true, mode, res.message || 'Transaksi berhasil.', info, res.fine);
+} {
   e.preventDefault();
   const memberId = $('circ-member').value.trim(), bookId = $('circ-book').value.trim(), v = scanMode === 'visit';
   showLoader(true, v ? 'Mencatat kunjungan...' : 'Memproses transaksi...');
