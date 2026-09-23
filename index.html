@@ -494,7 +494,8 @@ async function handleExcelUploadBooks(e) {
 
 // ---------- Anggota ----------
 function membersHTML() {
-  return `<div class="card"><div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4"><h3 class="font-black text-slate-800 text-lg md:text-xl w-full">Daftar Anggota Aktif</h3><div class="flex w-full md:w-auto gap-2"><button onclick="downloadExcelTemplate()" class="btn !shadow-none flex-1 md:flex-none bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-2 !text-xs"><i data-lucide="download" class="w-4 h-4"></i> Template</button><label class="btn platinum-gradient flex-1 md:flex-none flex items-center justify-center gap-2 cursor-pointer !text-xs"><i data-lucide="upload" class="w-4 h-4"></i> Upload Excel<input type="file" accept=".xlsx,.xls" class="hidden" onchange="handleExcelUpload(event)"></label><button onclick="openMemberModal()" class="btn bg-emerald-800 text-white"><i data-lucide="plus" class="w-5 h-5"></i></button></div></div>
+  return `<div class="card"><div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4"><h3 class="font-black text-slate-800 text-lg md:text-xl w-full">Daftar Anggota Aktif</h3><div class="flex w-full md:w-auto gap-2 flex-wrap"><button onclick="downloadExcelTemplate()" class="btn !shadow-none flex-1 md:flex-none bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-2 !text-xs"><i data-lucide="download" class="w-4 h-4"></i> Template</button><label class="btn platinum-gradient flex-1 md:flex-none flex items-center justify-center gap-2 cursor-pointer !text-xs"><i data-lucide="upload" class="w-4 h-4"></i> Upload Excel<input type="file" accept=".xlsx,.xls" class="hidden" onchange="handleExcelUpload(event)"></label><label class="btn bg-purple-700 text-white flex-1 md:flex-none flex items-center justify-center gap-2 cursor-pointer !text-xs" title="Pilih folder berisi foto anggota. Nama file foto harus berupa NISN, Nama Lengkap, atau Nomor Urut anggota di database."><i data-lucide="images" class="w-4 h-4"></i> Upload Foto Massal<input type="file" webkitdirectory directory multiple accept="image/*" class="hidden" onchange="handleBulkPhotoUpload(event)"></label><button onclick="openMemberModal()" class="btn bg-emerald-800 text-white"><i data-lucide="plus" class="w-5 h-5"></i></button></div></div>
+    <p class="text-[10px] text-slate-400 font-bold -mt-2 mb-4">*Upload Foto Massal: pilih folder berisi file foto, penamaan file = NISN, Nama Lengkap, atau Nomor Urut anggota sesuai urutan di database (contoh: 0012345678.jpg, Ahmad Fauzi.jpg, atau 1.jpg / 2.jpg / 3.jpg ...).</p>
     <div class="relative mb-6">
       <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
       <input id="member-search" type="text" value="${esc(memberSearch)}" oninput="filterMembers(this.value)" placeholder="Cari nama, kelas, atau ID/NISN anggota..." class="inp !pl-11"/>
@@ -583,6 +584,52 @@ async function handleExcelUpload(e) {
   } catch (err) { showLoader(false); showToast(err.message, true); }
   e.target.value = '';
 }
+
+// ---------- Upload Foto Massal (folder foto -> dicocokkan ke NISN / Nama Lengkap / Nomor Urut di database) ----------
+function normPhotoKey(s) {
+  return String(s || '').toLowerCase().replace(/\.[^/.]+$/, '').normalize('NFKD').replace(/[^a-z0-9]+/g, '');
+}
+async function handleBulkPhotoUpload(e) {
+  const allFiles = Array.from(e.target.files || []);
+  const files = allFiles.filter(f => f.type.startsWith('image/'));
+  e.target.value = '';
+  if (!appState.members.length) return showToast('Belum ada data anggota untuk dicocokkan.', true);
+  if (!files.length) return showToast('Tidak ada file foto (gambar) yang ditemukan di folder tersebut.', true);
+
+  const byId = {}, byName = {}, byOrder = {};
+  appState.members.forEach((m, i) => { byId[normPhotoKey(m.MemberID)] = m; byName[normPhotoKey(m.Name)] = m; byOrder[i + 1] = m; });
+
+  const r = await Swal.fire({ icon:'question', title:'Upload Foto Massal', html:`Ditemukan <b>${files.length}</b> file foto di folder ini.<br>Sistem akan mencocokkan tiap nama file ke <b>NISN</b>, <b>Nama Lengkap</b>, atau <b>Nomor Urut</b> anggota di database (1, 2, 3, ...), lalu mengunggahnya satu per satu.<br><br>Lanjutkan?`, showCancelButton:true, confirmButtonColor:'#7e22ce', cancelButtonColor:'#64748b', confirmButtonText:'Ya, Proses', cancelButtonText:'Batal' });
+  if (!r.isConfirmed) return;
+
+  let ok = 0, unmatched = 0, failed = 0;
+  const problems = [];
+  showLoader(true, `Mengunggah foto 0/${files.length}`);
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    const t = Swal.getTitle(); if (t) t.textContent = `Mengunggah foto ${i + 1}/${files.length}`;
+    const key = normPhotoKey(f.name);
+    let member = byId[key] || byName[key];
+    if (!member && /^\d+$/.test(key)) member = byOrder[parseInt(key, 10)]; // fallback: nama file angka murni = nomor urut di database
+    if (!member) { unmatched++; problems.push(f.name + ' — tidak cocok dengan NISN/Nama/Nomor Urut manapun'); continue; }
+    try {
+      const url = await uploadImage(f, 'foto anggota', { type:'member_photo', kelas: member.Class, nama: member.Name });
+      await apiPost('update_member', { id: member.ID, memberId: member.MemberID, name: member.Name, class: member.Class, validUntil: member.ValidUntil, photoUrl: url });
+      member.PhotoUrl = url;
+      ok++;
+    } catch (err) { failed++; problems.push(f.name + ' — ' + err.message); }
+  }
+  showLoader(false);
+  await refresh();
+  warnIfPrivate();
+  const summary = `Berhasil: <b>${ok}</b> foto` + (unmatched ? `, Tidak cocok: <b>${unmatched}</b>` : '') + (failed ? `, Gagal unggah: <b>${failed}</b>` : '') + '.';
+  Swal.fire({
+    icon: (unmatched || failed) ? 'warning' : 'success',
+    title: 'Upload Foto Massal Selesai',
+    html: `<p style="font-size:13px">${summary}</p>` + (problems.length ? `<div style="max-height:160px;overflow:auto;text-align:left;font-size:11px;margin-top:10px;background:#f8fafc;padding:8px;border-radius:8px;border:1px solid #e2e8f0">${problems.map(x => esc(x)).join('<br>')}</div>` : '')
+  });
+}
+
 async function deleteItem(sheet, id) {
   const r = await Swal.fire({ title:'Hapus Data?', text:'Data yang dihapus tidak dapat dikembalikan.', icon:'warning', showCancelButton:true, confirmButtonColor:'#dc2626', cancelButtonColor:'#64748b', confirmButtonText:'Ya, Hapus', cancelButtonText:'Batal' });
   if (!r.isConfirmed) return;
@@ -869,7 +916,7 @@ function bottomBarGradient(cfg) {
   const list = colors.length ? colors : DEF.cardBottomColors.split(',');
   return `linear-gradient(90deg,${list.join(',')})`;
 }
-const cardShell = (d, inner, bgUrl, bgOpacity, font, cfg) => `<div style="position:relative;width:${d.W}px;height:${d.H}px;box-sizing:border-box;overflow:hidden;background:#fff;border:1px solid #064e3b;border-radius:0;font:${10 * d.k}px ${font || DEF.cardFont};color:#0f172a">${cardBgLayer(bgUrl,bgOpacity)}<div style="position:relative;z-index:1;width:100%;height:100%;display:flex;flex-direction:column">${inner}<div style="height:.65em;flex:none;background:${bottomBarGradient(cfg || {})};border-top-right-radius:2.4em .55em"></div></div></div>`;
+const cardShell = (d, inner, bgUrl, bgOpacity, font, cfg) => `<div style="position:relative;width:${d.W}px;height:${d.H}px;box-sizing:border-box;overflow:hidden;background:#fff;border:1px solid #064e3b;border-radius:0;font:${10 * d.k}px ${font || DEF.cardFont};color:#0f172a">${cardBgLayer(bgUrl,bgOpacity)}<div style="position:relative;z-index:1;width:100%;height:100%;display:flex;flex-direction:column">${inner}<div style="height:.65em;flex:none;background:${bottomBarGradient(cfg || {})};border-top-right-radius:2.4em .55em;border-bottom-left-radius:2.4em .55em"></div></div></div>`;
 
 // ----- SISI DEPAN -----
 function cardFront(m, cfg = S()) {
