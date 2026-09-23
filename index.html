@@ -12,9 +12,7 @@
 <link rel="manifest" href="manifest.json" />
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
-<!-- FIX BARCODE: path lama cdnjs (/dist/) tidak ada -> JsBarcode undefined -> batang kosong. Pakai jsDelivr + cadangan cdnjs (path benar). -->
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-<script>window.JsBarcode || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"><\/script>');</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/dist/JsBarcode.all.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
@@ -60,6 +58,7 @@
       <nav id="sidebar-nav" class="flex-1 space-y-2"></nav>
       <div class="mt-auto p-4 bg-white/40 rounded-2xl flex flex-col items-center gap-2 border border-white/50">
         <button id="btn-install" class="hide w-full platinum-gradient px-4 py-2.5 rounded-xl font-black text-xs shadow-lg" onclick="installApp()"><i data-lucide="download" class="w-4 h-4 inline"></i> Install Aplikasi</button>
+        <button onclick="forceUpdateApp()" title="Bersihkan cache & terapkan ulang nama/tema/icon PWA terbaru di perangkat ini" class="w-full bg-slate-700 text-white px-4 py-2.5 rounded-xl font-black text-xs shadow-lg flex items-center justify-center gap-2 hover:bg-slate-600 transition"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Perbarui Aplikasi</button>
       </div>
     </aside>
 
@@ -168,12 +167,12 @@
 // =====================================================================
 // GANTI URL DI BAWAH INI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
 // =====================================================================
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzd7tQQZy4tHkP8_0csSbrqLARbzqHoS6LDPJg_KZHmNioc6XT6DbxzOhBSnfFMl4sQnQ/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwRrRVLRKib7s_k2ff-DBJUkd2WrnXYDb61WGWYBhRjOVrnCCpN3r8B_BXbOh8uzUxdjw/exec";
 
 const PX = 96 / 25.4;
 const TABS = [['dashboard','Beranda','home','BERANDA PERPUSTAKAAN'],['books','Buku','book-open','INVENTARIS BUKU'],['ebooks','E-Book','book-marked','PERPUSTAKAAN DIGITAL (E-BOOK)'],['members','Anggota','users','DATA ANGGOTA'],['circulation','Sirkulasi','scan-line','SIRKULASI & SCAN'],['reports','Laporan','file-text','LAPORAN SISTEM'],['settings','Pengaturan','settings','PENGATURAN']];
-const KEYS = ['schoolName','libraryName','address','contact','city','headmaster','librarian','logoLeft','logoRight','reportLogoLeft','reportLogoRight','loanDurationDays','finePerDay','cardWidth','cardHeight','bookCategories','cardBgFront','cardBgBack','cardBgOpacity','cardRadius','cardHeaderColor','cardFont','cardRules','cardQuote','cardQuoteAuthor','cardSpaceDateSign','cardSpaceSignQuote','cardBottomColors','reportMarginTop','reportMarginRight','reportMarginBottom','reportMarginLeft'];
-const DEF = { loanDurationDays: 7, finePerDay: 0, cardWidth: 85.6, cardHeight: 54, bookCategories: 'Pendidikan,Sains,Novel,Sejarah,Referensi', cardBgOpacity: 20, cardRadius: 3.2, cardHeaderColor: '#059669', cardFont: "Arial, sans-serif", cardRules: 'Kartu ini wajib dibawa setiap kali melakukan peminjaman atau pengembalian buku.\nKeterlambatan pengembalian buku akan dikenakan denda sesuai ketentuan yang berlaku.\nKerusakan atau kehilangan buku yang dipinjam sepenuhnya menjadi tanggung jawab peminjam.\nKartu anggota ini tidak boleh dipinjamkan atau digunakan oleh orang lain.', cardQuote: 'Membaca adalah jendela dunia, dan buku adalah kuncinya.', cardQuoteAuthor: 'Anonim', cardSpaceDateSign: 0.55, cardSpaceSignQuote: 0.55, cardBottomColors: '#064e3b,#10b981,#064e3b', reportMarginTop: 25, reportMarginRight: 20, reportMarginBottom: 25, reportMarginLeft: 20 };
+const KEYS = ['schoolName','libraryName','address','contact','city','headmaster','librarian','logoLeft','logoRight','reportLogoLeft','reportLogoRight','loanDurationDays','finePerDay','cardWidth','cardHeight','bookCategories','cardBgFront','cardBgBack','cardBgOpacity','cardRadius','cardHeaderColor','cardFont','cardRules','cardQuote','cardQuoteAuthor','cardSpaceDateSign','cardSpaceSignQuote','cardBottomColors','reportMarginTop','reportMarginRight','reportMarginBottom','reportMarginLeft','pwaName','pwaShortName','pwaThemeColor','pwaBgColor','pwaIcon'];
+const DEF = { loanDurationDays: 7, finePerDay: 0, cardWidth: 85.6, cardHeight: 54, bookCategories: 'Pendidikan,Sains,Novel,Sejarah,Referensi', cardBgOpacity: 20, cardRadius: 3.2, cardHeaderColor: '#059669', cardFont: "Arial, sans-serif", cardRules: 'Kartu ini wajib dibawa setiap kali melakukan peminjaman atau pengembalian buku.\nKeterlambatan pengembalian buku akan dikenakan denda sesuai ketentuan yang berlaku.\nKerusakan atau kehilangan buku yang dipinjam sepenuhnya menjadi tanggung jawab peminjam.\nKartu anggota ini tidak boleh dipinjamkan atau digunakan oleh orang lain.', cardQuote: 'Membaca adalah jendela dunia, dan buku adalah kuncinya.', cardQuoteAuthor: 'Anonim', cardSpaceDateSign: 0.55, cardSpaceSignQuote: 0.55, cardBottomColors: '#064e3b,#10b981,#064e3b', reportMarginTop: 25, reportMarginRight: 20, reportMarginBottom: 25, reportMarginLeft: 20, pwaName: 'E-LIBRARY — Sistem Perpustakaan Digital Sekolah', pwaShortName: 'E-LIBRARY', pwaThemeColor: '#047857', pwaBgColor: '#f8fafc' };
 let appState = { activeTab:'dashboard', setupError:false, books:[], members:[], loans:[], visits:[], ebooks:[], settings:{} };
 let scanMode = 'loan', qr = null, scanTarget = null, pvTimer = null, uploadPrivate = false, ebookSearch = '', bookSearch = '', memberSearch = '';
 
@@ -251,14 +250,16 @@ async function compressImage(file, maxSide, mime, quality) {
 }
 // extra.type menentukan folder & format nama file di Drive (lihat resolveUploadTarget di Code.gs):
 //   member_photo (kelas, nama) -> ASSETS_ELIBRARY/Photo Profile/PP_KELAS_NAMA
-//   logo_left / logo_right     -> ASSETS_ELIBRARY/Logo Sekolah/LOGO_KIRI atau LOGO_KANAN
+//   logo_left / logo_right     -> ASSETS_ELIBRARY/Logo Kartu/KARTU_KIRI atau KARTU_KANAN
+//   report_logo_left / report_logo_right -> ASSETS_ELIBRARY/Logo Laporan/LAPORAN_KIRI atau LAPORAN_KANAN
 //   card_bg_front / card_bg_back -> ASSETS_ELIBRARY/Background Kartu/BK_DEPAN atau BK_BELAKANG
+//   pwa_icon                    -> ASSETS_ELIBRARY/Icon Aplikasi/PWA_ICON
 //   ebook_cover (kode)         -> EBOOK/COVER EBOOK/CB_KODE
 //   ebook_pdf (kode, nama)     -> EBOOK/PDF EBOOK/KODE_NAMA
 async function uploadImage(file, label, extra = {}) {
   if (!file) return '';
   const isPdf = file.type === 'application/pdf';
-  const isLogo = /logo/i.test(label || '');
+  const isLogo = /logo|icon/i.test(label || '');
   const dataUrl = isPdf ? await fileToDataURL(file) : await compressImage(file, isLogo ? 900 : 1200, isLogo ? 'image/png' : 'image/jpeg', 0.92);
   const res = await apiPost('upload_file', { dataUrl, filename: file.name, ...extra }); // error asli server ikut terlempar
   if (!res || !res.url) throw new Error('Gagal mengunggah ' + (label || 'file') + ': server tidak mengembalikan URL.');
@@ -284,29 +285,59 @@ async function initApp() {
   } catch (e) { appState.setupError = true; }
   finally { showLoader(false); }
   switchTab(appState.activeTab);
+  applyPwaSettings();
 }
 
 // ---------- PWA ----------
-function pwaIcon(sz) {
+function shadeColor(hex, percent) {
+  hex = String(hex || '#047857').replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  if (!/^[0-9a-fA-F]{6}$/.test(hex)) hex = '047857';
+  const num = parseInt(hex, 16);
+  let r = (num >> 16) + percent, g = ((num >> 8) & 0x00FF) + percent, b = (num & 0x0000FF) + percent;
+  r = Math.min(255, Math.max(0, r)); g = Math.min(255, Math.max(0, g)); b = Math.min(255, Math.max(0, b));
+  return '#' + (0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1);
+}
+function pwaIcon(sz, color) {
   const c = document.createElement('canvas'); c.width = c.height = sz;
   const x = c.getContext('2d'), g = x.createLinearGradient(0,0,sz,sz);
-  g.addColorStop(0,'#047857'); g.addColorStop(.5,'#064e3b'); g.addColorStop(1,'#047857');
+  const base = color || '#047857', dark = shadeColor(base, -60);
+  g.addColorStop(0, base); g.addColorStop(.5, dark); g.addColorStop(1, base);
   x.fillStyle = g; x.beginPath(); x.roundRect ? x.roundRect(0,0,sz,sz,sz*.22) : x.rect(0,0,sz,sz); x.fill();
   x.strokeStyle = '#fff'; x.lineWidth = sz/13; x.lineCap = 'round';
   [[4,4,4,20],[8,8,8,20],[12,6,12,20],[16,6,20,20]].forEach(a => { x.beginPath(); x.moveTo(a[0]/24*sz,a[1]/24*sz); x.lineTo(a[2]/24*sz,a[3]/24*sz); x.stroke(); });
   return c.toDataURL('image/png');
 }
+// Menerapkan nama, warna tema, dan icon aplikasi PWA sesuai Pengaturan (manifest dibuat ulang secara dinamis
+// setiap kali data dimuat, agar perubahan di menu Pengaturan langsung berlaku tanpa perlu deploy ulang manifest.json).
+function applyPwaSettings() {
+  try {
+    const s = S();
+    const name = (s.pwaName || DEF.pwaName || '').trim() || DEF.pwaName;
+    const shortName = (s.pwaShortName || DEF.pwaShortName || '').trim() || DEF.pwaShortName;
+    const themeColor = s.pwaThemeColor || DEF.pwaThemeColor;
+    const bgColor = s.pwaBgColor || DEF.pwaBgColor;
+    const iconUrl = (s.pwaIcon || '').trim();
+    document.title = name;
+    const setMeta = (sel, val) => { const m = document.querySelector(sel); if (m) m.content = val; };
+    setMeta('meta[name="theme-color"]', themeColor);
+    setMeta('meta[name="apple-mobile-web-app-title"]', shortName);
+    const icon192 = iconUrl || pwaIcon(192, themeColor);
+    const icon512 = iconUrl || pwaIcon(512, themeColor);
+    const iconType = iconUrl ? (/\.png(\?|$)/i.test(iconUrl) ? 'image/png' : /\.(jpe?g)(\?|$)/i.test(iconUrl) ? 'image/jpeg' : /\.svg(\?|$)/i.test(iconUrl) ? 'image/svg+xml' : 'image/png') : 'image/png';
+    const man = { name, short_name: shortName, start_url: location.href.split('#')[0].split('?')[0], scope:'./', display:'standalone', background_color: bgColor, theme_color: themeColor, icons:[{src:icon192,sizes:'192x192',type:iconType,purpose:'any'},{src:icon512,sizes:'512x512',type:iconType,purpose:'any'},{src:icon512,sizes:'512x512',type:iconType,purpose:'maskable'}] };
+    const old = document.querySelector('link[rel="manifest"]'); if (old) old.remove();
+    const l = document.createElement('link'); l.rel = 'manifest'; l.href = URL.createObjectURL(new Blob([JSON.stringify(man)],{type:'application/manifest+json'})); document.head.appendChild(l);
+    let a = document.querySelector('link[rel="apple-touch-icon"]');
+    if (!a) { a = document.createElement('link'); a.rel = 'apple-touch-icon'; document.head.appendChild(a); }
+    a.href = icon192;
+    let fav = document.querySelector('link[rel="icon"]');
+    if (!fav) { fav = document.createElement('link'); fav.rel = 'icon'; document.head.appendChild(fav); }
+    fav.href = icon192;
+  } catch (e) { console.warn('Gagal menerapkan pengaturan PWA', e); }
+}
 function initPwa() {
   try {
-    const ok = u => fetch(u,{method:'HEAD'}).then(r => r.ok).catch(() => false);
-    Promise.all([ok('manifest.json'),ok('icon-192.png'),ok('icon-512.png')]).then(r => {
-      if (r.every(Boolean)) return;
-      const i192 = pwaIcon(192), i512 = pwaIcon(512);
-      const man = { name:'E-LIBRARY — Sistem Perpustakaan Digital Sekolah', short_name:'E-LIBRARY', start_url:location.href.split('#')[0].split('?')[0], scope:'./', display:'standalone', background_color:'#f8fafc', theme_color:'#047857', icons:[{src:i192,sizes:'192x192',type:'image/png',purpose:'any'},{src:i512,sizes:'512x512',type:'image/png',purpose:'any'},{src:i512,sizes:'512x512',type:'image/png',purpose:'maskable'}] };
-      const old = document.querySelector('link[rel="manifest"]'); if (old) old.remove();
-      const l = document.createElement('link'); l.rel = 'manifest'; l.href = URL.createObjectURL(new Blob([JSON.stringify(man)],{type:'application/manifest+json'})); document.head.appendChild(l);
-      const a = document.createElement('link'); a.rel = 'apple-touch-icon'; a.href = i192; document.head.appendChild(a);
-    });
     if ('serviceWorker' in navigator) fetch('sw.js',{method:'HEAD'}).then(r => { if (r.ok) navigator.serviceWorker.register('sw.js'); }).catch(() => {});
     addEventListener('beforeinstallprompt', e => {
       e.preventDefault();
@@ -324,6 +355,42 @@ function installApp() {
     $('btn-install').classList.add('hide');
     const bm = $('btn-install-mobile'); if (bm) bm.classList.add('hide');
   });
+}
+// Untuk pengguna yang sebelumnya sudah membuka/menginstall aplikasi versi lama (cache Service Worker
+// masih menyimpan index.html/manifest lama): tombol ini melepas Service Worker lama, menghapus seluruh
+// cache di perangkat, menerapkan ulang nama/warna tema/icon PWA dari Pengaturan, lalu memuat ulang halaman.
+// Catatan: icon di layar utama (home screen) beberapa perangkat/browser hanya diperbarui saat aplikasi
+// di-install ulang, karena OS mengambil snapshot icon saat pertama kali "Tambahkan ke Layar Utama".
+async function forceUpdateApp() {
+  const r = await Swal.fire({
+    icon: 'question',
+    title: 'Perbarui Aplikasi?',
+    html: 'Proses ini akan menghapus cache aplikasi di perangkat ini dan menerapkan ulang nama, warna tema, dan icon PWA terbaru dari Pengaturan, lalu memuat ulang halaman.<br><br>Jika icon di layar utama HP masih belum berubah setelah ini, hapus shortcut aplikasi dari layar utama lalu tekan <b>Install Aplikasi</b> kembali.',
+    showCancelButton: true,
+    confirmButtonColor: '#334155',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'Ya, Perbarui',
+    cancelButtonText: 'Batal'
+  });
+  if (!r.isConfirmed) return;
+  showLoader(true, 'Membersihkan cache & memperbarui aplikasi...');
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const reg of regs) { try { await reg.unregister(); } catch (e) {} }
+    }
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k).catch(() => {})));
+    }
+    applyPwaSettings();
+    if ('serviceWorker' in navigator) {
+      fetch('sw.js', { method:'HEAD' }).then(r2 => { if (r2.ok) navigator.serviceWorker.register('sw.js'); }).catch(() => {});
+    }
+  } catch (e) { console.warn('Gagal memperbarui aplikasi', e); }
+  showLoader(false);
+  await Swal.fire({ icon:'success', title:'Aplikasi Diperbarui', text:'Halaman akan dimuat ulang...', timer:1500, showConfirmButton:false });
+  location.href = location.pathname + '?_upd=' + Date.now();
 }
 
 // ---------- Navigasi ----------
@@ -948,44 +1015,13 @@ async function pdfWork(pages, opt, blob) {
   catch (e) { return await pdfChain(pages.map(h => h.replace(/<img[^>]*src="(?!data:)[^"]*"[^>]*>/g, '')), opt, blob); }
 }
 function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
-
-// ---------- BARCODE CODE128 ----------
-// FIX: sebelumnya JsBarcode dimuat dari URL cdnjs yang salah (404), sehingga library tidak ada,
-// error tertelan try/catch, dan canvas kosong (transparan) dikembalikan -> batang barcode tidak tampil.
-// Sekarang: (1) library dimuat dari jsDelivr (+ cadangan cdnjs), (2) bila tetap gagal, dipakai
-// generator Code128-B bawaan (tanpa library) sehingga barcode SELALU tampil, online maupun offline.
-const C128 = ['212222','222122','222221','121223','121322','131222','122213','122312','132212','221213','221312','231212','112232','122132','122231','113222','123122','123221','223211','221132','221231','213212','223112','312131','311222','321122','321221','312212','322112','322211','212123','212321','232121','111323','131123','131321','112313','132113','132311','211313','231113','231311','112133','112331','132131','113123','113321','133121','313121','211331','231131','213113','213311','213131','311123','311321','331121','312113','312311','332111','314111','221411','431111','111224','111422','121124','121421','141122','141221','112214','112412','122114','122411','142112','142211','241211','221114','413111','241112','134111','111242','121142','121241','114212','124112','124211','411212','421112','421211','212141','214121','412121','111143','111341','131141','114113','114311','411113','411311','113141','114131','311141','411131','211412','211214','211232','2331112'];
-function code128Fallback(v) {
-  const txt = String(v);
-  const codes = [104]; let sum = 104;
-  for (let i = 0; i < txt.length; i++) {
-    let c = txt.charCodeAt(i) - 32;
-    if (c < 0 || c > 95) c = 31; // karakter di luar ASCII 32-127 diganti '?'
-    codes.push(c); sum += c * (i + 1);
-  }
-  codes.push(sum % 103, 106);
-  const pat = codes.map(c => C128[c]).join('');
-  const quiet = 10, unit = 2, H = 50;
-  let mods = 0; for (const ch of pat) mods += +ch;
-  const cv = document.createElement('canvas');
-  cv.width = (mods + quiet * 2) * unit; cv.height = H;
-  const x = cv.getContext('2d');
-  x.fillStyle = '#fff'; x.fillRect(0, 0, cv.width, cv.height);
-  x.fillStyle = '#000';
-  let pos = quiet * unit, bar = true;
-  for (const ch of pat) { const w = +ch * unit; if (bar) x.fillRect(pos, 0, w, H); pos += w; bar = !bar; }
-  return cv;
-}
 function barcode(v) {
-  const val = String(v == null ? '' : v) || ' ';
-  if (window.JsBarcode) {
-    try {
-      const c = document.createElement('canvas');
-      JsBarcode(c, val, { format:'CODE128', width:2, height:50, displayValue:false, margin:10, marginTop:0, marginBottom:0, background:'#ffffff', lineColor:'#000000' });
-      if (c.width > 0) return c.toDataURL('image/png');
-    } catch (e) { console.warn('JsBarcode gagal, memakai generator cadangan', e); }
-  }
-  return code128Fallback(val).toDataURL('image/png');
+  const c = document.createElement('canvas');
+  try {
+    if (typeof JsBarcode !== 'function') throw new Error('Library JsBarcode belum termuat (cek koneksi/CDN).');
+    JsBarcode(c, String(v), { format:'CODE128', width:2, height:50, displayValue:false, margin:0 });
+  } catch (e) { console.error('Gagal membuat barcode untuk "' + v + '":', e.message || e); }
+  return c.toDataURL('image/png');
 }
 
 function kop() {
@@ -1104,7 +1140,8 @@ function cardFront(m, cfg = S()) {
       <img src="${photo}" crossorigin="anonymous" style="width:${pw}px;height:${ph}px;object-fit:cover;border:2px solid #e2e8f0;border-radius:4px;flex:none"/>
       <div style="flex:1;min-width:0;width:100%">
         <table style="border-collapse:collapse;font-size:.68em;font-weight:800;line-height:1.3;color:#1e293b">${row('NAMA', m.Name)}${row('NISN', m.MemberID)}${row('KELAS', m.Class)}</table>
-        <img src="${barcode(m.MemberID)}" style="display:block;width:100%;height:15mm;margin-top:.2em"/>
+        <img src="${barcode(m.MemberID)}" style="display:block;width:100%;height:2.4em;margin-top:.2em"/>
+        <div style="font-size:.7em;font-family:monospace;font-weight:bold;color:#064e3b;text-align:center">${esc(m.MemberID)}</div>
       </div>
     </div>`, cfg.cardBgFront, cfg.cardBgOpacity, cfg.cardFont, cfg);
 }
@@ -1175,14 +1212,24 @@ function settingsHTML() {
   return `<form onsubmit="submitSettings(event)" oninput="schedulePreview()" class="max-w-3xl mx-auto space-y-4 md:space-y-6">
     ${sec('building-2','Profil Instansi','Create your own custom',`<div class="space-y-4">${f('schoolName','Nama Sekolah')}${f('libraryName','Nama Perpustakaan')}${f('address','Alamat')}<div class="grid grid-cols-2 gap-4">${f('contact','Telepon / Email')}${f('city','Kota (titimangsa laporan & kartu)')}</div><div class="grid grid-cols-2 gap-4">${f('headmaster','Nama Kepala Sekolah')}${f('librarian','Nama Petugas Perpustakaan')}</div></div>`)}
     ${sec('repeat','Pengaturan Pinjaman','Aturan durasi peminjaman dan denda keterlambatan.',`<div class="grid grid-cols-2 gap-4">${f('loanDurationDays','Durasi Pinjam (Hari)','number','','min="1"')}${f('finePerDay','Denda / Hari (Rp)','number','','min="0"')}</div>`)}
+    ${sec('smartphone','Pengaturan Aplikasi (PWA)','Nama, warna tema, dan icon yang dipakai saat aplikasi ini di-install ke layar utama (Add to Home Screen) di HP/laptop pengguna.',`<div class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">${f('pwaName','Nama Aplikasi (Lengkap)','text','Contoh: E-LIBRARY — Perpustakaan Digital MHM')}${f('pwaShortName','Nama Singkat (Ikon Layar Utama)','text','Contoh: E-LIBRARY')}</div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="lbl">Warna Tema Aplikasi</label><input id="set-pwaThemeColor" type="color" class="inp !p-1 !h-12 cursor-pointer"/></div>
+        <div><label class="lbl">Warna Latar Splash Screen</label><input id="set-pwaBgColor" type="color" class="inp !p-1 !h-12 cursor-pointer"/></div>
+      </div>
+      ${imgField('pwaIcon','Icon Aplikasi (disarankan persegi, min. 512x512px, PNG)')}
+      <p class="text-[9px] text-slate-400 font-bold">Jika icon dikosongkan, sistem otomatis membuat icon dari Warna Tema di atas. Setelah menyimpan, gunakan tombol di bawah pada perangkat yang sudah lama membuka aplikasi ini agar pembaruan langsung diterapkan.</p>
+      <button type="button" onclick="forceUpdateApp()" class="btn bg-slate-800 text-white w-full flex items-center justify-center gap-2"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Perbarui Aplikasi di Perangkat Ini</button>
+    </div>`)}
     ${sec('tags','Jenis / Kategori Buku & E-Book','Satu kategori per baris. Dipakai pada pilihan kategori buku, E-Book (termasuk pengelompokan rak E-Book), dan template Excel.',`<textarea id="set-bookCategories" rows="5" class="inp" placeholder="Pendidikan&#10;Sains&#10;Novel"></textarea>`)}
-    ${sec('image','Logo Kartu Anggota','Logo yang tampil di kop KARTU ANGGOTA (sisi depan). Gunakan gambar resolusi tinggi/persegi (PNG transparan disarankan) agar tidak buram saat dicetak.',`<div class="grid grid-cols-2 gap-4">${imgField('logoLeft','Logo Kiri (Kartu)')}${imgField('logoRight','Logo Kanan (Kartu)')}</div>`)}
-    ${sec('file-text','Logo Laporan (Kop Surat)','Logo yang tampil di kop setiap PDF laporan &amp; barcode buku. Terpisah dari logo kartu di atas. Jika kedua kolom di bawah dikosongkan, sistem memakai logo kartu sebagai cadangan (kiri &amp; kanan). Jika Anda mengisi salah satu kolom saja, hanya logo itu yang tampil di laporan — sisi yang kosong TIDAK akan otomatis diisi logo kartu.',`<div class="grid grid-cols-2 gap-4">${imgField('reportLogoLeft','Logo Kiri (Laporan)')}${imgField('reportLogoRight','Logo Kanan (Laporan)')}</div>`)}
+    ${sec('image','Logo Kartu Anggota','Logo yang tampil di kop KARTU ANGGOTA (sisi depan), disimpan di folder Drive terpisah dari logo laporan (ASSETS_ELIBRARY/Logo Kartu, nama file KARTU_KIRI/KARTU_KANAN). Gunakan gambar resolusi tinggi/persegi (PNG transparan disarankan) agar tidak buram saat dicetak.',`<div class="grid grid-cols-2 gap-4">${imgField('logoLeft','Logo Kiri (Kartu)')}${imgField('logoRight','Logo Kanan (Kartu)')}</div>`)}
+    ${sec('file-text','Logo Laporan (Kop Surat)','Logo yang tampil di kop setiap PDF laporan &amp; barcode buku, disimpan di folder Drive terpisah dari logo kartu di atas (ASSETS_ELIBRARY/Logo Laporan, nama file LAPORAN_KIRI/LAPORAN_KANAN). Jika kedua kolom di bawah dikosongkan, sistem memakai logo kartu sebagai cadangan (kiri &amp; kanan). Jika Anda mengisi salah satu kolom saja, hanya logo itu yang tampil di laporan — sisi yang kosong TIDAK akan otomatis diisi logo kartu.',`<div class="grid grid-cols-2 gap-4">${imgField('reportLogoLeft','Logo Kiri (Laporan)')}${imgField('reportLogoRight','Logo Kanan (Laporan)')}</div>`)}
     ${sec('layout-panel-top','Margin Cetak PDF Laporan','Atur jarak margin atas, bawah, kiri, dan kanan (mm) saat mencetak PDF laporan (Keaktifan, Buku Tersedia/Dipinjam/Dikembalikan, Tunggakan Akhir).',`<div class="grid grid-cols-2 gap-4">${f('reportMarginTop','Margin Atas (mm)','number','','min="0" max="60" step="1"')}${f('reportMarginBottom','Margin Bawah (mm)','number','','min="0" max="60" step="1"')}${f('reportMarginLeft','Margin Kiri (mm)','number','','min="0" max="60" step="1"')}${f('reportMarginRight','Margin Kanan (mm)','number','','min="0" max="60" step="1"')}</div>`)}
     ${sec('credit-card','Pengaturan Cetak Kartu','Sesuaikan tampilan, warna, font, jarak elemen, dan isi tata tertib kartu anggota',`<div class="grid md:grid-cols-2 gap-6"><div class="space-y-4"><div><label class="lbl">Preset Ukuran</label><select id="set-preset" onchange="applyPreset()" class="inp"><option value="85.6x54">ID Card Landscape — 85,6 × 54 mm</option><option value="54x85.6">ID Card Portrait — 54 × 85,6 mm</option><option value="custom">Kustom</option></select></div><div class="grid grid-cols-2 gap-4">${f('cardWidth','Lebar (mm)','number','','min="30" max="210" step="0.1"')}${f('cardHeight','Tinggi (mm)','number','','min="30" max="210" step="0.1"')}</div><div>${f('cardRadius','Radius Sudut Kartu (mm)','number','','min="0" max="10" step="0.1"')}</div>${imgField('cardBgFront','Background Sisi Depan')}${imgField('cardBgBack','Background Sisi Belakang')}<div><label class="lbl">Opasitas Background: <span id="opacity-val">${DEF.cardBgOpacity}</span>%</label><input id="set-cardBgOpacity" type="range" min="0" max="100" oninput="$('opacity-val').innerText=this.value" class="w-full"/></div><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Warna Background Kop Kartu</label><input id="set-cardHeaderColor" type="color" class="inp !p-1 !h-12 cursor-pointer"/></div><div><label class="lbl">Font Kartu</label><select id="set-cardFont" class="inp">${FONT_OPTS.map(o => `<option value="${o[0]}">${o[1]}</option>`).join('')}</select></div></div><div><label class="lbl">Warna Garis Bawah Kartu (list warna)</label><input id="set-cardBottomColors" class="inp" placeholder="#064e3b,#10b981,#064e3b"/><p class="text-[9px] text-slate-400 font-bold mt-1">Pisahkan dengan koma (kode HEX). Minimal 2 warna untuk membuat gradasi.</p></div><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Jarak Titimangsa ↔ TTD (em)</label>${f('cardSpaceDateSign','','number','','min="0" max="5" step="0.05"')}</div><div><label class="lbl">Jarak TTD ↔ Quotes (em)</label>${f('cardSpaceSignQuote','','number','','min="0" max="5" step="0.05"')}</div></div><div><label class="lbl">Isi Tata Tertib (satu poin per baris)</label><textarea id="set-cardRules" rows="5" class="inp" placeholder="Tulis satu poin tata tertib per baris..."></textarea></div><div><label class="lbl">Quotes di Kartu (tampil di bawah ttd)</label><textarea id="set-cardQuote" rows="2" class="inp" placeholder="Contoh: Membaca adalah jendela dunia..."></textarea></div><div><label class="lbl">Sumber / Pembicara Quotes</label><input id="set-cardQuoteAuthor" class="inp" placeholder="Contoh: Anonim, Nabi Muhammad SAW, dll"/></div></div><div><label class="lbl">Pratinjau (data contoh)</label><div id="card-preview" class="mt-1 overflow-auto p-2 bg-slate-50 rounded-xl border flex flex-wrap justify-center gap-3"></div></div></div>`)}
     <button class="btn platinum-gradient w-full py-4 tracking-widest">SIMPAN PENGATURAN</button></form>`;
 }
-const SETTING_UPLOAD_TYPE = { logoLeft:'logo_left', logoRight:'logo_right', reportLogoLeft:'report_logo_left', reportLogoRight:'report_logo_right', cardBgFront:'card_bg_front', cardBgBack:'card_bg_back' };
+const SETTING_UPLOAD_TYPE = { logoLeft:'logo_left', logoRight:'logo_right', reportLogoLeft:'report_logo_left', reportLogoRight:'report_logo_right', cardBgFront:'card_bg_front', cardBgBack:'card_bg_back', pwaIcon:'pwa_icon' };
 async function previewSettingImage(key) {
   const fileInput = $('file-' + key), file = fileInput.files[0]; if (!file) return;
   const prev = $('prev-' + key), reader = new FileReader();
@@ -1195,12 +1242,14 @@ async function previewSettingImage(key) {
     showLoader(false);
     schedulePreview();
     warnIfPrivate();
+    if (key === 'pwaIcon') applyPwaSettings();
   } catch (err) { showLoader(false); showToast(err.message, true); }
 }
 function clearSettingImage(key) {
   $('set-' + key).value = ''; $('file-' + key).value = '';
   $('prev-' + key).classList.add('hide'); $('prev-' + key).src = '';
   schedulePreview();
+  if (key === 'pwaIcon') applyPwaSettings();
 }
 const formSettings = () => {
   const o = {};
@@ -1213,7 +1262,7 @@ function populateSettings() {
   const s = S();
   KEYS.forEach(k => { const e = $('set-' + k); if (e) e.value = (s[k] !== undefined && s[k] !== '') ? s[k] : (DEF[k] !== undefined ? DEF[k] : ''); });
   $('set-bookCategories').value = getCategories().join('\n');
-  ['logoLeft','logoRight','reportLogoLeft','reportLogoRight','cardBgFront','cardBgBack'].forEach(k => {
+  ['logoLeft','logoRight','reportLogoLeft','reportLogoRight','cardBgFront','cardBgBack','pwaIcon'].forEach(k => {
     const url = $('set-' + k).value, prev = $('prev-' + k);
     if (url) { prev.src = url; prev.classList.remove('hide'); } else { prev.classList.add('hide'); prev.src = ''; }
   });
@@ -1240,21 +1289,7 @@ async function submitSettings(e) {
   if (res) await refresh(res.message); else showLoader(false);
 }
 
-async function purgeLocalCache() {
-  try {
-    if ('caches' in window) {
-      const keys = await caches.keys();
-      await Promise.all(keys.map(k => caches.delete(k)));
-    }
-  } catch (e) { console.warn('Gagal membersihkan cache storage', e); }
-  try {
-    if ('serviceWorker' in navigator) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(r => r.unregister()));
-    }
-  } catch (e) { console.warn('Gagal unregister service worker', e); }
-}
-window.addEventListener('load', async () => { await purgeLocalCache(); buildNav(); initPwa(); initApp(); });
+window.addEventListener('load', () => { buildNav(); initPwa(); initApp(); });
 </script>
 </body>
 </html>
