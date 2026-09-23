@@ -1,40 +1,1215 @@
-/**
- * E-LIBRARY Service Worker v6
- * Network-first: data selalu segar dari Google Sheets, cache hanya dipakai saat offline.
- */
-const CACHE = 'e-library-v6';
-const SHELL = ['./', './index.html', './manifest.json'];
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>E-LIBRARY | Perpustakaan Digital Manbaul Huda</title>
+<meta name="theme-color" content="#047857" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="E-LIBRARY" />
+<link rel="manifest" href="manifest.json" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style type="text/tailwindcss">
+  @layer components {
+    .card { @apply bg-white rounded-[2rem] shadow-sm border border-slate-100 p-5 md:p-8; }
+    .btn { @apply px-5 py-3 rounded-xl font-black text-sm shadow-lg transition hover:opacity-90 disabled:cursor-not-allowed; }
+    .inp { @apply w-full mt-1 p-3 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-sm; }
+    .lbl { @apply text-[10px] font-black text-slate-500 uppercase tracking-widest; }
+  }
+</style>
+<style>
+  body { background: linear-gradient(135deg,#f8fafc 0%,#e2e8f0 50%,#cbd5e1 100%); background-attachment: fixed; font-family: 'Inter',system-ui,sans-serif; color:#1e293b; margin:0; min-height:100vh; overflow-x:hidden; -webkit-font-smoothing:antialiased; }
+  .glass-panel { background:rgba(255,255,255,.75); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid rgba(255,255,255,.8); box-shadow:0 4px 6px -1px rgba(0,0,0,.05); }
+  .header-box { background:linear-gradient(135deg,rgba(255,255,255,.95),rgba(241,245,249,.9)); border:1px solid #fff; box-shadow:0 4px 10px rgba(0,0,0,.05); border-radius:1.5rem; padding:1.5rem 2rem; border-left:8px solid #059669; }
+  .text-3d-elegant { background:linear-gradient(180deg,#10b981 0%,#047857 50%,#fbbf24 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(2px 2px 1px rgba(0,0,0,.2)); display:inline-block; }
+  .platinum-gradient { background:linear-gradient(to right,#047857,#064e3b,#047857); background-size:200% auto; color:#fff; transition:.5s; }
+  .platinum-gradient:hover { background-position:right center; }
+  .metallic-text { background:linear-gradient(to right,#064e3b,#022c22,#064e3b); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .hide { display:none !important; }
+  .app-viewport { height:100vh; height:100dvh; }
+  .scroll-smooth { -webkit-overflow-scrolling:touch; scroll-behavior:smooth; }
+  .hide-scroll::-webkit-scrollbar { display:none; }
+</style>
+</head>
+<body>
+<div id="e-library-app">
+  <!-- SCANNER -->
+  <div id="scanner-modal" class="fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[1000] flex flex-col items-center justify-center p-4 hide">
+    <div class="w-full max-w-md bg-white rounded-[2rem] overflow-hidden shadow-2xl flex flex-col">
+      <div class="p-5 bg-emerald-800 text-white flex justify-between items-center"><h3 class="font-black text-lg flex items-center gap-2"><i class="w-5 h-5" data-lucide="camera"></i> Scanner</h3><button class="text-emerald-100 hover:text-white" onclick="closeScanner()"><i class="w-6 h-6" data-lucide="x"></i></button></div>
+      <div class="p-4 bg-slate-100 flex justify-center items-center" style="min-height:350px"><div id="reader" class="w-full overflow-hidden rounded-xl border-2 border-slate-300 bg-black"></div></div>
+      <div class="p-4 text-center text-xs text-slate-500 font-bold">Posisikan barcode di area kotak. Hindari pantulan cahaya.</div>
+    </div>
+  </div>
 
-self.addEventListener('install', e => {
-  self.skipWaiting();
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).catch(() => {}));
-});
+  <div class="flex app-viewport overflow-hidden pb-20 lg:pb-0">
+    <aside class="w-72 glass-panel hidden lg:flex flex-col p-6 m-4 rounded-3xl z-10 shadow-lg">
+      <div class="flex items-center gap-3 mb-10 px-2"><div class="platinum-gradient p-3 rounded-2xl shadow-lg"><i class="text-white w-6 h-6" data-lucide="library"></i></div><div><h1 class="font-black text-2xl metallic-text tracking-tighter">E-LIBRARY</h1><p class="text-[8px] font-bold text-emerald-600 tracking-widest">@2026 made by Albustomipauzi</p></div></div>
+      <nav id="sidebar-nav" class="flex-1 space-y-2"></nav>
+      <div class="mt-auto p-4 bg-white/40 rounded-2xl flex flex-col items-center gap-2 border border-white/50">
+        <button id="btn-install" class="hide w-full platinum-gradient px-4 py-2.5 rounded-xl font-black text-xs shadow-lg" onclick="installApp()"><i data-lucide="download" class="w-4 h-4 inline"></i> Install Aplikasi</button>
+      </div>
+    </aside>
 
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
-  );
-});
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 glass-panel border-t border-slate-200 z-50 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] bg-white/90" style="padding-bottom:calc(env(safe-area-inset-bottom) + .5rem)">
+      <div id="mobile-nav" class="flex overflow-x-auto hide-scroll px-2 py-2 gap-1"></div>
+    </nav>
 
-self.addEventListener('fetch', e => {
-  const r = e.request;
-  // Lewati non-GET, skema non-http, dan API Google Apps Script (harus online)
-  if (r.method !== 'GET' || !r.url.startsWith('http') || /script\.google(usercontent)?\.com/.test(r.url)) return;
+    <button id="btn-install-mobile" onclick="installApp()" class="hide lg:hidden fixed z-40 right-4 platinum-gradient p-4 rounded-2xl shadow-2xl" style="bottom:calc(88px + env(safe-area-inset-bottom))" title="Install Aplikasi">
+      <i data-lucide="download" class="w-5 h-5 text-white"></i>
+    </button>
 
-  if (r.mode === 'navigate') {
-    e.respondWith(fetch(r).catch(() => caches.match('./index.html')));
+    <main id="main-scroll-area" class="flex-1 overflow-y-auto scroll-smooth p-4 md:p-8 z-0 relative w-full">
+      <header class="mb-8 header-box flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+        <div>
+          <p id="header-subtitle" class="text-emerald-700 text-xs md:text-sm font-bold tracking-widest uppercase mb-1">MEMUAT...</p>
+          <h2 id="header-title" class="text-2xl md:text-4xl lg:text-5xl font-black text-3d-elegant uppercase leading-tight py-1">Memuat Sistem</h2>
+        </div>
+        <div class="hidden md:block"><div class="bg-emerald-50 text-emerald-800 px-5 py-3 rounded-xl font-bold text-sm flex items-center gap-2 border border-emerald-200"><i class="w-5 h-5" data-lucide="calendar-days"></i> <span id="current-date-disp"></span></div></div>
+      </header>
+      <div id="app-content" class="w-full"></div>
+    </main>
+  </div>
+
+  <!-- MODAL BUKU -->
+  <div id="modal-book" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[400] flex items-center justify-center p-4 hide">
+    <div class="glass-panel w-full max-w-lg rounded-[2rem] p-6 md:p-10 shadow-2xl max-h-full overflow-y-auto">
+      <h3 id="book-modal-title" class="text-2xl font-black mb-6 text-emerald-800">Katalog Buku Baru</h3>
+      <form id="form-book" class="space-y-4" onsubmit="submitBook(event)">
+        <input type="hidden" id="book-edit-id" value=""/>
+        <div><label class="lbl">Judul Lengkap</label><input id="book-title" required class="inp"/></div>
+        <div class="grid grid-cols-2 gap-4">
+          <div><label class="lbl">Penulis</label><input id="book-author" required class="inp"/></div>
+          <div><label class="lbl">Kategori</label><select id="book-category" class="inp"></select></div>
+        </div>
+        <div class="grid grid-cols-3 gap-4">
+          <div class="col-span-2"><label class="lbl">Basis Barcode/ISBN</label><input id="book-isbn" required placeholder="Misal: B-INDO" class="inp"/></div>
+          <div><label class="lbl">Jml Eksemplar</label><input id="book-qty" type="number" min="1" max="100" value="1" required class="inp text-center"/></div>
+        </div>
+        <p id="book-qty-note" class="text-[10px] text-emerald-600 font-bold">*Jika eksemplar &gt; 1, barcode digenerate otomatis berurutan (-1, -2, ...).</p>
+        <div class="flex gap-4 pt-2"><button type="button" onclick="toggleModal('modal-book',false)" class="flex-1 font-bold text-slate-500 hover:bg-white/50 rounded-xl py-3">Batal</button><button class="btn platinum-gradient flex-[2]">Simpan Data</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL ANGGOTA -->
+  <div id="modal-member" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[400] flex items-center justify-center p-4 hide">
+    <div class="glass-panel w-full max-w-lg rounded-[2rem] p-6 md:p-10 shadow-2xl max-h-full overflow-y-auto">
+      <h3 id="member-modal-title" class="text-2xl font-black mb-6 text-emerald-800">Registrasi Manual</h3>
+      <form id="form-member" class="space-y-4" onsubmit="submitMember(event)">
+        <input type="hidden" id="member-edit-id" value=""/>
+        <input type="hidden" id="member-photo-url" value=""/>
+        <div><label class="lbl">ID Anggota / NISN</label><input id="member-id" required class="inp"/></div>
+        <div><label class="lbl">Nama Lengkap</label><input id="member-name" required class="inp"/></div>
+        <div class="grid grid-cols-2 gap-4">
+          <div><label class="lbl">Kelas</label><input id="member-class" required placeholder="Contoh: 9A" class="inp"/></div>
+          <div><label class="lbl">Berlaku s/d</label><input id="member-valid" required placeholder="Juli 2027" class="inp"/></div>
+        </div>
+        <div>
+          <label class="lbl">Foto Anggota (Opsional)</label>
+          <div class="flex items-center gap-3 mt-1">
+            <img id="member-photo-preview" src="" class="hide w-16 h-16 rounded-xl object-cover border bg-slate-100"/>
+            <input id="member-photo-file" type="file" accept="image/*" class="inp" onchange="previewMemberPhoto(event)"/>
+          </div>
+          <p class="text-[9px] text-slate-400 font-bold mt-1">Foto akan diunggah otomatis ke folder Drive ASSETS_ELIBRARY/Photo Profile (nama file: PP_KELAS_NAMA) saat data disimpan.</p>
+        </div>
+        <div class="flex gap-4 pt-2"><button type="button" onclick="toggleModal('modal-member',false)" class="flex-1 font-bold text-slate-500 hover:bg-white/50 rounded-xl py-3">Batal</button><button class="btn platinum-gradient flex-[2]">Simpan</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL E-BOOK -->
+  <div id="modal-ebook" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[400] flex items-center justify-center p-4 hide">
+    <div class="glass-panel w-full max-w-lg rounded-[2rem] p-6 md:p-10 shadow-2xl max-h-full overflow-y-auto">
+      <h3 id="ebook-modal-title" class="text-2xl font-black mb-6 text-emerald-800">Tambah E-Book</h3>
+      <form id="form-ebook" class="space-y-4" onsubmit="submitEbook(event)">
+        <input type="hidden" id="ebook-edit-id" value=""/>
+        <input type="hidden" id="ebook-cover-url" value=""/>
+        <input type="hidden" id="ebook-pdf-url" value=""/>
+        <input type="hidden" id="ebook-pdf-id" value=""/>
+        <div class="grid grid-cols-2 gap-4">
+          <div><label class="lbl">Kode E-Book</label><input id="ebook-code" required placeholder="Misal: EB-001" class="inp"/></div>
+          <div><label class="lbl">Kategori</label><select id="ebook-category" class="inp"></select></div>
+        </div>
+        <div><label class="lbl">Judul E-Book</label><input id="ebook-title" required class="inp"/></div>
+        <div><label class="lbl">Penulis</label><input id="ebook-author" class="inp"/></div>
+        <div>
+          <label class="lbl">Cover E-Book (Opsional)</label>
+          <div class="flex items-center gap-3 mt-1">
+            <img id="ebook-cover-preview" src="" class="hide w-14 h-20 rounded-lg object-cover border bg-slate-100"/>
+            <input id="ebook-cover-file" type="file" accept="image/*" class="inp" onchange="previewEbookCover(event)"/>
+          </div>
+          <p class="text-[9px] text-slate-400 font-bold mt-1">Tersimpan di EBOOK/COVER EBOOK, nama file: CB_KODE.</p>
+        </div>
+        <div>
+          <label class="lbl">File PDF E-Book</label>
+          <input id="ebook-pdf-file" type="file" accept="application/pdf" class="inp"/>
+          <p class="text-[9px] text-slate-400 font-bold mt-1">Tersimpan di EBOOK/PDF EBOOK, nama file: KODE_JUDUL. Saat edit, kosongkan jika tidak ingin mengganti file PDF.</p>
+        </div>
+        <div class="flex gap-4 pt-2"><button type="button" onclick="toggleModal('modal-ebook',false)" class="flex-1 font-bold text-slate-500 hover:bg-white/50 rounded-xl py-3">Batal</button><button class="btn platinum-gradient flex-[2]">Simpan E-Book</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+// =====================================================================
+// GANTI URL DI BAWAH INI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
+// =====================================================================
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzd7tQQZy4tHkP8_0csSbrqLARbzqHoS6LDPJg_KZHmNioc6XT6DbxzOhBSnfFMl4sQnQ/exec";
+
+const PX = 96 / 25.4;
+const TABS = [['dashboard','Beranda','home','BERANDA PERPUSTAKAAN'],['books','Buku','book-open','INVENTARIS BUKU'],['ebooks','E-Book','book-marked','PERPUSTAKAAN DIGITAL (E-BOOK)'],['members','Anggota','users','DATA ANGGOTA'],['circulation','Sirkulasi','scan-line','SIRKULASI & SCAN'],['reports','Laporan','file-text','LAPORAN SISTEM'],['settings','Pengaturan','settings','PENGATURAN']];
+const KEYS = ['schoolName','libraryName','address','contact','city','headmaster','librarian','logoLeft','logoRight','reportLogoLeft','reportLogoRight','loanDurationDays','finePerDay','cardWidth','cardHeight','bookCategories','cardBgFront','cardBgBack','cardBgOpacity','cardRadius','cardHeaderColor','cardFont','cardRules','cardQuote','cardQuoteAuthor','cardSpaceDateSign','cardSpaceSignQuote','cardBottomColors','reportMarginTop','reportMarginRight','reportMarginBottom','reportMarginLeft'];
+const DEF = { loanDurationDays: 7, finePerDay: 0, cardWidth: 85.6, cardHeight: 54, bookCategories: 'Pendidikan,Sains,Novel,Sejarah,Referensi', cardBgOpacity: 20, cardRadius: 3.2, cardHeaderColor: '#059669', cardFont: "Arial, sans-serif", cardRules: 'Kartu ini wajib dibawa setiap kali melakukan peminjaman atau pengembalian buku.\nKeterlambatan pengembalian buku akan dikenakan denda sesuai ketentuan yang berlaku.\nKerusakan atau kehilangan buku yang dipinjam sepenuhnya menjadi tanggung jawab peminjam.\nKartu anggota ini tidak boleh dipinjamkan atau digunakan oleh orang lain.', cardQuote: 'Membaca adalah jendela dunia, dan buku adalah kuncinya.', cardQuoteAuthor: 'Anonim', cardSpaceDateSign: 0.55, cardSpaceSignQuote: 0.55, cardBottomColors: '#064e3b,#10b981,#064e3b', reportMarginTop: 25, reportMarginRight: 20, reportMarginBottom: 25, reportMarginLeft: 20 };
+let appState = { activeTab:'dashboard', setupError:false, books:[], members:[], loans:[], visits:[], ebooks:[], settings:{} };
+let scanMode = 'loan', qr = null, scanTarget = null, pvTimer = null, uploadPrivate = false, ebookSearch = '', bookSearch = '', memberSearch = '';
+
+const $ = id => document.getElementById(id);
+const S = () => appState.settings || {};
+const N = x => Number(x) || 0;
+const esc = s => s == null ? '' : String(s).replace(/[&<>'"]/g, t => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[t]));
+const fmtDate = s => { if (!s) return '-'; const d = new Date(s); return isNaN(d) ? String(s) : d.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}); };
+const rp = n => 'Rp ' + N(n).toLocaleString('id-ID');
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
+const safe = s => String(s || '').replace(/[^\w\-]+/g,'_').slice(0,40);
+const mem = id => appState.members.find(m => m.ID === id) || {};
+const late = l => { const d = Math.floor((Date.now() - new Date(l.DueDate)) / 864e5); return d > 0 ? d : 0; };
+const getCategories = () => { const raw = (S().bookCategories || DEF.bookCategories); return raw.split(',').map(s => s.trim()).filter(Boolean); };
+
+// ---------- UI helpers ----------
+const Toast = Swal.mixin({ toast:true, position:'top-end', showConfirmButton:false, timer:3000, timerProgressBar:true });
+const showToast = (msg, err) => Toast.fire({ icon: err ? 'error' : 'success', title: msg });
+function showLoader(on, text = 'Memproses...') { if (on) Swal.fire({ title:text, allowOutsideClick:false, allowEscapeKey:false, showConfirmButton:false, didOpen:() => Swal.showLoading() }); else Swal.close(); }
+function toggleModal(id, show) { const m = $(id); if (m) m.classList.toggle('hide', !show); }
+async function job(text, fn, ok) {
+  showLoader(true, text);
+  try { await fn(); showLoader(false); if (ok) showToast(ok); }
+  catch (e) { showLoader(false); showToast('Gagal: ' + (e.message || e), true); }
+}
+async function refresh(msg) { await initApp(); if (msg) showToast(msg); }
+
+// apiPost: melempar Error dengan pesan ASLI dari server (dipakai untuk upload agar penyebab gagal terlihat)
+async function apiPost(action, payload = {}, extra = {}) {
+  const body = new URLSearchParams({ action, payload: JSON.stringify(payload), ...extra });
+  let res;
+  try { res = await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body }); }
+  catch (e) { throw new Error('Tidak bisa menghubungi server. Periksa internet dan pastikan akses Web App = "Siapa saja".'); }
+  const txt = await res.text();
+  let json;
+  try { json = JSON.parse(txt); }
+  catch (e) { throw new Error('Server tidak membalas JSON. Biasanya izin Drive belum diberikan (jalankan authorizeDrive di editor) atau deployment belum "New version".'); }
+  if (json.status === 'error') throw new Error(json.message);
+  return json;
+}
+// apiCall: versi lama (menampilkan toast error lalu mengembalikan null)
+async function apiCall(action, payload = {}, extra = {}) {
+  try { return await apiPost(action, payload, extra); }
+  catch (err) { console.error(err); showToast(err.message || 'Gagal menghubungi server', true); return null; }
+}
+
+// ---------- Upload gambar/PDF -> folder Drive ASSETS_ELIBRARY / EBOOK (terstruktur per jenis) ----------
+function fileToDataURL(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = () => rej(new Error('Gagal membaca file.'));
+    r.readAsDataURL(file);
+  });
+}
+async function compressImage(file, maxSide, mime, quality) {
+  if (/svg|gif/.test(file.type)) return fileToDataURL(file);
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = () => rej(new Error('Gagal membaca gambar. Gunakan format JPG / PNG / WEBP.'));
+      i.src = url;
+    });
+    const k = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.naturalWidth * k);
+    c.height = Math.round(img.naturalHeight * k);
+    const x = c.getContext('2d');
+    if (mime === 'image/jpeg') { x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); }
+    x.drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL(mime, quality);
+  } finally { URL.revokeObjectURL(url); }
+}
+// extra.type menentukan folder & format nama file di Drive (lihat resolveUploadTarget di Code.gs):
+//   member_photo (kelas, nama) -> ASSETS_ELIBRARY/Photo Profile/PP_KELAS_NAMA
+//   logo_left / logo_right     -> ASSETS_ELIBRARY/Logo Kartu/KARTU_KIRI atau KARTU_KANAN
+//   report_logo_left / report_logo_right -> ASSETS_ELIBRARY/Logo Laporan/LAPORAN_KIRI atau LAPORAN_KANAN
+//   card_bg_front / card_bg_back -> ASSETS_ELIBRARY/Background Kartu/BK_DEPAN atau BK_BELAKANG
+//   ebook_cover (kode)         -> EBOOK/COVER EBOOK/CB_KODE
+//   ebook_pdf (kode, nama)     -> EBOOK/PDF EBOOK/KODE_NAMA
+async function uploadImage(file, label, extra = {}) {
+  if (!file) return '';
+  const isPdf = file.type === 'application/pdf';
+  const isLogo = /logo/i.test(label || '');
+  const dataUrl = isPdf ? await fileToDataURL(file) : await compressImage(file, isLogo ? 900 : 1200, isLogo ? 'image/png' : 'image/jpeg', 0.92);
+  const res = await apiPost('upload_file', { dataUrl, filename: file.name, ...extra }); // error asli server ikut terlempar
+  if (!res || !res.url) throw new Error('Gagal mengunggah ' + (label || 'file') + ': server tidak mengembalikan URL.');
+  if (res.shared === false) uploadPrivate = true;
+  return res.url;
+}
+function warnIfPrivate() {
+  if (!uploadPrivate) return;
+  uploadPrivate = false;
+  Swal.fire({ icon:'warning', title:'File tersimpan, tapi belum publik', text:'File sudah masuk folder ASSETS_ELIBRARY / EBOOK di Drive, namun kebijakan Google Workspace menolak berbagi link publik sehingga file bisa tidak tampil/terbuka. Buka folder itu di Drive lalu atur berbagi ke "Siapa saja yang memiliki link" (Viewer).' });
+}
+
+async function initApp() {
+  try {
+    showLoader(true, 'Menghubungkan Server...');
+    $('current-date-disp').innerText = new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    const res = await apiCall('get_all_data');
+    if (res && res.data) {
+      appState.setupError = false;
+      ['books','members','loans','visits','ebooks'].forEach(k => appState[k] = res.data[k] || []);
+      appState.settings = res.data.settings || {};
+    } else appState.setupError = true;
+  } catch (e) { appState.setupError = true; }
+  finally { showLoader(false); }
+  switchTab(appState.activeTab);
+}
+
+// ---------- PWA ----------
+function pwaIcon(sz) {
+  const c = document.createElement('canvas'); c.width = c.height = sz;
+  const x = c.getContext('2d'), g = x.createLinearGradient(0,0,sz,sz);
+  g.addColorStop(0,'#047857'); g.addColorStop(.5,'#064e3b'); g.addColorStop(1,'#047857');
+  x.fillStyle = g; x.beginPath(); x.roundRect ? x.roundRect(0,0,sz,sz,sz*.22) : x.rect(0,0,sz,sz); x.fill();
+  x.strokeStyle = '#fff'; x.lineWidth = sz/13; x.lineCap = 'round';
+  [[4,4,4,20],[8,8,8,20],[12,6,12,20],[16,6,20,20]].forEach(a => { x.beginPath(); x.moveTo(a[0]/24*sz,a[1]/24*sz); x.lineTo(a[2]/24*sz,a[3]/24*sz); x.stroke(); });
+  return c.toDataURL('image/png');
+}
+function initPwa() {
+  try {
+    const ok = u => fetch(u,{method:'HEAD'}).then(r => r.ok).catch(() => false);
+    Promise.all([ok('manifest.json'),ok('icon-192.png'),ok('icon-512.png')]).then(r => {
+      if (r.every(Boolean)) return;
+      const i192 = pwaIcon(192), i512 = pwaIcon(512);
+      const man = { name:'E-LIBRARY — Sistem Perpustakaan Digital Sekolah', short_name:'E-LIBRARY', start_url:location.href.split('#')[0].split('?')[0], scope:'./', display:'standalone', background_color:'#f8fafc', theme_color:'#047857', icons:[{src:i192,sizes:'192x192',type:'image/png',purpose:'any'},{src:i512,sizes:'512x512',type:'image/png',purpose:'any'},{src:i512,sizes:'512x512',type:'image/png',purpose:'maskable'}] };
+      const old = document.querySelector('link[rel="manifest"]'); if (old) old.remove();
+      const l = document.createElement('link'); l.rel = 'manifest'; l.href = URL.createObjectURL(new Blob([JSON.stringify(man)],{type:'application/manifest+json'})); document.head.appendChild(l);
+      const a = document.createElement('link'); a.rel = 'apple-touch-icon'; a.href = i192; document.head.appendChild(a);
+    });
+    if ('serviceWorker' in navigator) fetch('sw.js',{method:'HEAD'}).then(r => { if (r.ok) navigator.serviceWorker.register('sw.js'); }).catch(() => {});
+    addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      window.deferredPrompt = e;
+      $('btn-install').classList.remove('hide');
+      const bm = $('btn-install-mobile'); if (bm) bm.classList.remove('hide');
+    });
+  } catch (e) { console.warn('PWA init gagal', e); }
+}
+function installApp() {
+  const p = window.deferredPrompt;
+  if (!p) return showToast("Gunakan menu browser → 'Tambahkan ke Layar Utama'.");
+  p.prompt(); p.userChoice.then(() => {
+    window.deferredPrompt = null;
+    $('btn-install').classList.add('hide');
+    const bm = $('btn-install-mobile'); if (bm) bm.classList.add('hide');
+  });
+}
+
+// ---------- Navigasi ----------
+function buildNav() {
+  $('sidebar-nav').innerHTML = TABS.map(t => `<button id="nav-${t[0]}" onclick="switchTab('${t[0]}')" class="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition font-bold"><i class="w-5 h-5" data-lucide="${t[2]}"></i> ${t[1]}</button>`).join('');
+  $('mobile-nav').innerHTML = TABS.map(t => `<button id="mob-${t[0]}" onclick="switchTab('${t[0]}')" class="flex flex-col items-center py-2 px-2 flex-1 min-w-[62px] rounded-2xl"><i class="w-6 h-6 mb-1" data-lucide="${t[2]}"></i><span class="text-[9px] font-bold">${t[1]}</span></button>`).join('');
+}
+function switchTab(id) {
+  appState.activeTab = id;
+  const t = TABS.find(x => x[0] === id) || TABS[0];
+  $('header-title').innerText = t[3];
+  $('header-subtitle').innerText = S().schoolName || 'PERPUSTAKAAN SEKOLAH';
+  TABS.forEach(x => {
+    const on = x[0] === id;
+    $('nav-'+x[0]).className = 'w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition font-bold ' + (on ? 'platinum-gradient shadow-md' : 'text-slate-500 hover:bg-emerald-50 hover:text-emerald-800');
+    $('mob-'+x[0]).className = 'flex flex-col items-center py-2 px-2 flex-1 min-w-[62px] rounded-2xl transition ' + (on ? 'bg-emerald-50 text-emerald-700' : 'text-slate-400');
+  });
+  $('main-scroll-area').scrollTo(0,0);
+  renderView();
+}
+function renderView() {
+  const V = { dashboard:dashHTML, books:booksHTML, ebooks:ebooksHTML, members:membersHTML, circulation:circHTML, reports:reportsHTML, settings:settingsHTML };
+  const t = appState.activeTab;
+  $('app-content').innerHTML = (appState.setupError ? errHTML : (V[t] || dashHTML))();
+  if (!appState.setupError) {
+    if (t === 'reports') updateCounts();
+    if (t === 'settings') { populateSettings(); refreshPreview(); }
+    if (t === 'ebooks') renderEbookGroups();
+    if (t === 'books') renderBookGroups();
+    if (t === 'members') renderMemberGroups();
+    if (t === 'circulation') setTimeout(() => $('circ-member') && $('circ-member').focus(), 60);
+  }
+  try { lucide.createIcons(); } catch (e) {}
+}
+function errHTML() {
+  return `<div class="glass-panel p-8 md:p-12 rounded-[2rem] border-l-8 border-red-500 text-center shadow-xl mt-4 max-w-3xl mx-auto"><i data-lucide="server-crash" class="w-16 h-16 text-red-500 mx-auto mb-6"></i><h3 class="font-black text-slate-800 text-xl md:text-3xl">Koneksi Database Gagal!</h3><p class="text-slate-500 mt-4 text-xs md:text-sm">Pastikan Web App Google Apps Script sudah di-deploy (akses: Siapa saja) dan URL pada <code class="bg-slate-200 px-2 py-1 rounded font-mono">GAS_URL</code> di index.html sudah benar.</p><button onclick="initApp()" class="btn mt-6 bg-emerald-800 text-white">Muat Ulang</button></div>`;
+}
+
+// ---------- Beranda: semua kartu akumulasi & statistik ----------
+function getActivity(limit) {
+  const vc = {}, lc = {};
+  appState.visits.forEach(v => { if (v.MemberID) vc[v.MemberID] = (vc[v.MemberID] || 0) + 1; });
+  appState.loans.forEach(l => { if (l.MemberID) lc[l.MemberID] = (lc[l.MemberID] || 0) + 1; });
+  const all = appState.members.map(m => ({ name:m.Name, cls:m.Class, visits:vc[m.ID]||0, loans:lc[m.ID]||0, score:(vc[m.ID]||0)+(lc[m.ID]||0) })).filter(r => r.score > 0).sort((a,b) => b.score - a.score);
+  const total = all.reduce((s,r) => s + r.score, 0) || 1, max = all.length ? all[0].score : 1;
+  all.forEach(r => { r.pct = r.score / total * 100; r.pctMax = r.score / max * 100; });
+  return { rows: all.slice(0, limit), total };
+}
+const rankRow = (i,c,main,sub,bar,val) => `<div class="flex items-center gap-3 py-2.5 border-b border-slate-50 last:border-0"><div class="w-7 h-7 rounded-full flex items-center justify-center font-black text-[10px] ${i<3?`bg-${c}-600 text-white`:'bg-slate-100 text-slate-500'}">${i+1}</div><div class="flex-1 overflow-hidden"><p class="font-bold text-slate-800 text-xs md:text-sm truncate">${esc(main)}</p>${sub?`<p class="text-[9px] text-slate-400 font-bold uppercase truncate">${sub}</p>`:''}</div><div class="w-24 hidden sm:block"><div class="h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-${c}-500 rounded-full" style="width:${bar}%"></div></div></div><div class="font-black text-${c}-700 text-xs md:text-sm w-16 text-right">${val}</div></div>`;
+const empty = t => `<p class="text-center py-8 text-slate-400 font-bold text-sm">${t}</p>`;
+
+function dashHTML() {
+  const A = appState, b = A.books, l = A.loans;
+  const borrowed = b.filter(x => x.Status === 'borrowed').length, avail = b.filter(x => x.Status === 'available').length;
+  const vt = A.visits.filter(v => String(v.VisitDate).slice(0,10) === today()).length;
+  const overdue = l.filter(x => x.Status === 'borrowed' && late(x) > 0).length;
+  const paid = l.filter(x => x.FinePaid === 'lunas').reduce((s,x) => s + N(x.Fine), 0);
+  const unpaidL = l.filter(x => x.FinePaid === 'belum'), unpaid = unpaidL.reduce((s,x) => s + N(x.Fine), 0);
+  const cards = [['library','Total Buku',b.length,'emerald'],['book-marked','Total E-Book',A.ebooks.length,'teal'],['arrow-left-right','Dipinjam',borrowed,'orange'],['check-circle-2','Tersedia',avail,'green'],['alarm-clock','Terlambat',overdue,'red'],['users','Anggota',A.members.length,'blue'],['door-open','Masuk Hari Ini',vt,'purple'],['footprints','Total Kunjungan',A.visits.length,'purple'],['repeat','Total Transaksi',l.length,'slate'],['wallet','Denda Terkumpul',rp(paid),'green'],['alert-triangle','Denda Belum Lunas',rp(unpaid),'red']];
+  const act = getActivity(10).rows;
+  const cnt = {}; l.forEach(x => { if (x.BookTitle) cnt[x.BookTitle] = (cnt[x.BookTitle] || 0) + 1; });
+  const top = Object.entries(cnt).sort((a,b) => b[1] - a[1]).slice(0,10), mx = top.length ? top[0][1] : 1;
+  return `
+    <div class="card flex flex-col md:flex-row items-center justify-between border-l-8 border-l-emerald-600 gap-4 mb-6 !p-6">
+      <div><h3 class="font-black text-slate-800 text-lg md:text-xl">Dashboard Aktif</h3><p class="text-slate-500 text-xs md:text-sm mt-1">Memonitor ${borrowed} buku beredar, ${overdue} terlambat, dan ${vt} pengunjung hari ini.</p></div>
+      <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto"><button onclick="quickVisitScan()" class="btn platinum-gradient flex items-center justify-center gap-2"><i data-lucide="door-open" class="w-4 h-4"></i> Scan Masuk Pengunjung</button><button onclick="switchTab('reports')" class="btn bg-slate-800 text-white">Buka Laporan</button></div>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 mb-6">
+      ${cards.map(c => `<div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3 hover:border-${c[3]}-500 transition"><div class="bg-${c[3]}-50 text-${c[3]}-600 p-3 rounded-xl"><i data-lucide="${c[0]}" class="w-5 h-5"></i></div><div class="min-w-0"><p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${c[1]}</p><p class="text-lg md:text-xl font-black text-${c[3]}-600 truncate">${c[2]}</p></div></div>`).join('')}
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
+      <div class="card"><h3 class="font-black text-slate-800 text-base md:text-lg mb-1 flex items-center gap-2"><i data-lucide="trophy" class="w-5 h-5 text-emerald-600"></i> Akumulasi Keaktifan Anggota</h3><p class="text-[10px] md:text-xs text-slate-400 font-bold mb-4">Persentase gabungan kunjungan masuk + pinjam buku (Top 10)</p>${act.length ? act.map((a,i) => rankRow(i,'emerald',a.name,`${esc(a.cls)} • ${a.visits}x masuk • ${a.loans}x pinjam`,a.pctMax,a.pct.toFixed(1)+'%')).join('') : empty('Belum ada data keaktifan.')}</div>
+      <div class="card"><h3 class="font-black text-slate-800 text-base md:text-lg mb-1 flex items-center gap-2"><i data-lucide="flame" class="w-5 h-5 text-blue-600"></i> Buku Terpopuler</h3><p class="text-[10px] md:text-xs text-slate-400 font-bold mb-4">Berdasarkan jumlah kali dipinjam</p>${top.length ? top.map((t,i) => rankRow(i,'blue',t[0],'',t[1]/mx*100,t[1]+'x')).join('') : empty('Belum ada data peminjaman.')}</div>
+    </div>
+    <div class="card border-red-100"><h3 class="font-black text-red-700 text-base md:text-lg mb-1 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-5 h-5"></i> Denda Belum Lunas</h3><p class="text-[10px] md:text-xs text-slate-400 font-bold mb-4">Tandai lunas setelah anggota membayar denda keterlambatan</p>
+      ${unpaidL.length ? unpaidL.map(x => `<div class="flex items-center gap-3 py-3 border-b border-red-50 last:border-0"><div class="flex-1 overflow-hidden"><p class="font-bold text-slate-800 text-xs md:text-sm truncate">${esc(x.MemberName)}</p><p class="text-[9px] text-slate-400 font-bold truncate">${esc(x.BookTitle)}</p></div><div class="font-black text-red-600 text-xs md:text-sm whitespace-nowrap">${rp(x.Fine)}</div><button onclick="payFine('${esc(x.ID)}')" class="text-[10px] font-black bg-red-600 text-white px-2.5 py-1.5 rounded-lg hover:bg-red-700 whitespace-nowrap">Tandai Lunas</button></div>`).join('') : empty('Tidak ada denda tertunggak. 🎉')}
+    </div>`;
+}
+function quickVisitScan() { scanMode = 'visit'; switchTab('circulation'); }
+async function payFine(loanId) {
+  const r = await Swal.fire({ title:'Tandai Lunas?', text:'Denda akan ditandai sudah dibayar.', icon:'question', showCancelButton:true, confirmButtonColor:'#059669', cancelButtonColor:'#64748b', confirmButtonText:'Ya, Lunas', cancelButtonText:'Batal' });
+  if (!r.isConfirmed) return;
+  showLoader(true);
+  const res = await apiCall('pay_fine', { loanId });
+  if (res) await refresh(res.message); else showLoader(false);
+}
+
+// ---------- Buku ----------
+function booksHTML() {
+  return `<div class="card"><div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4"><h3 class="text-lg md:text-xl font-black text-slate-800 w-full">Katalog Pustaka</h3><div class="flex w-full md:w-auto gap-2 flex-wrap justify-end"><button onclick="downloadExcelTemplateBooks()" title="Template" class="btn !shadow-none !px-3.5 bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center"><i data-lucide="download" class="w-4 h-4"></i></button><label title="Upload Excel" class="btn platinum-gradient !px-3.5 flex items-center justify-center cursor-pointer"><i data-lucide="upload" class="w-4 h-4"></i><input type="file" accept=".xlsx,.xls" class="hidden" onchange="handleExcelUploadBooks(event)"></label><button onclick="openBookModal()" title="Tambah Buku" class="btn bg-emerald-800 text-white flex items-center gap-2 justify-center"><i data-lucide="plus" class="w-5 h-5"></i></button></div></div>
+    <div class="relative mb-6">
+      <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+      <input id="book-search" type="text" value="${esc(bookSearch)}" oninput="filterBooks(this.value)" placeholder="Cari judul, penulis, kategori, atau barcode/ISBN..." class="inp !pl-11"/>
+    </div>
+    <div id="book-groups"></div></div>`;
+}
+function bookRowHTML(b) {
+  return `<tr class="border-b border-slate-100 hover:bg-slate-50"><td class="py-3 px-2"><p class="font-bold text-slate-800 text-xs md:text-sm">${esc(b.Title)}</p><p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">${esc(b.Author)}</p></td><td class="py-3 px-2 text-center"><span class="text-[9px] font-black px-3 py-1.5 rounded-full uppercase ${b.Status==='available'?'bg-green-100 text-green-700':'bg-orange-100 text-orange-700'}">${esc(b.Status)}</span></td><td class="py-3 px-2"><span class="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">${esc(b.ISBN)}</span></td><td class="py-3 px-2 text-right"><div class="flex justify-end gap-1"><button onclick="openBookModal('${esc(b.ID)}')" title="Edit" class="p-2 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-800 hover:text-white transition"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="deleteItem('Books','${esc(b.ID)}')" title="Hapus" class="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></td></tr>`;
+}
+function filterBooks(v) { bookSearch = v; renderBookGroups(); }
+function renderBookGroups() {
+  const el = $('book-groups'); if (!el) return;
+  const q = bookSearch.trim().toLowerCase();
+  const filtered = appState.books.filter(b => !q || [b.Title, b.Author, b.Category, b.ISBN].some(v => String(v || '').toLowerCase().includes(q)));
+  if (!filtered.length) { el.innerHTML = empty(appState.books.length ? 'Tidak ada buku yang cocok dengan pencarian "' + esc(bookSearch) + '".' : 'Belum ada data buku.'); return; }
+  const cats = getCategories(), groups = {};
+  filtered.forEach(b => { const c = String(b.Category || '').trim() || 'Tanpa Kategori'; (groups[c] = groups[c] || []).push(b); });
+  const orderedCats = [...cats.filter(c => groups[c]), ...Object.keys(groups).filter(c => !cats.includes(c)).sort()];
+  el.innerHTML = orderedCats.map(cat => `
+    <div class="mb-7 last:mb-0">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full font-black text-xs uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="bookmark" class="w-3.5 h-3.5"></i> ${esc(cat)}</div>
+        <span class="text-[10px] font-bold text-slate-400">${groups[cat].length} eksemplar</span>
+        <div class="flex-1 h-px bg-slate-100"></div>
+      </div>
+      <div class="overflow-x-auto"><table class="w-full text-left min-w-[400px]"><thead class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b-2 border-slate-100"><tr><th class="pb-3 px-2">Buku & Penulis</th><th class="pb-3 px-2 text-center">Status</th><th class="pb-3 px-2">Barcode/ISBN</th><th class="pb-3 px-2 text-right">Aksi</th></tr></thead><tbody>${groups[cat].map(bookRowHTML).join('')}</tbody></table></div>
+    </div>`).join('');
+  try { lucide.createIcons(); } catch (e) {}
+}
+function openBookModal(id) {
+  const editing = !!id;
+  $('book-modal-title').innerText = editing ? 'Edit Buku' : 'Katalog Buku Baru';
+  $('book-edit-id').value = id || '';
+  const cats = getCategories();
+  $('book-category').innerHTML = cats.map(c => `<option>${esc(c)}</option>`).join('') || '<option>Umum</option>';
+  $('form-book').reset();
+  $('book-qty').value = 1;
+  $('book-qty').disabled = false;
+  $('book-qty-note').classList.remove('hide');
+  if (editing) {
+    const b = appState.books.find(x => x.ID === id);
+    if (!b) return showToast('Buku tidak ditemukan.', true);
+    $('book-title').value = b.Title; $('book-author').value = b.Author;
+    if (cats.includes(b.Category)) $('book-category').value = b.Category;
+    $('book-isbn').value = b.ISBN;
+    $('book-qty').value = 1; $('book-qty').disabled = true;
+    $('book-qty-note').classList.add('hide');
+  }
+  toggleModal('modal-book', true);
+}
+async function submitBook(e) {
+  e.preventDefault();
+  const editId = $('book-edit-id').value;
+  const p = { title:$('book-title').value.trim(), author:$('book-author').value.trim(), category:$('book-category').value, isbn:$('book-isbn').value.trim(), qty:$('book-qty').value };
+  showLoader(true, editId ? 'Memperbarui buku...' : 'Menyimpan buku...');
+  const res = editId
+    ? await apiCall('update_book', { id: editId, title:p.title, author:p.author, category:p.category, isbn:p.isbn })
+    : await apiCall('add_book', p);
+  if (res) { toggleModal('modal-book', false); $('form-book').reset(); $('book-qty').disabled = false; await refresh(res.message); } else showLoader(false);
+}
+function downloadExcelTemplateBooks() {
+  const cat = getCategories()[0] || 'Pendidikan';
+  const ws = XLSX.utils.json_to_sheet([{ title:'Contoh Judul Buku Satu', author:'Nama Penulis', category:cat, isbn:'B-CONTOH1', qty:1 },{ title:'Contoh Judul Buku Dua', author:'Nama Penulis', category:cat, isbn:'B-CONTOH2', qty:2 }]);
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Books');
+  XLSX.writeFile(wb, 'Template_Buku_E-Library.xlsx'); showToast('Template Excel diunduh.');
+}
+async function handleExcelUploadBooks(e) {
+  const file = e.target.files[0]; if (!file) return;
+  try {
+    showLoader(true, 'Membaca file Excel...');
+    const wb = XLSX.read(await file.arrayBuffer()), rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval:'' });
+    const defCat = getCategories()[0] || 'Pendidikan';
+    const mapped = rows.map(r => ({ title:String(r.title || r.Judul || '').trim(), author:String(r.author || r.Penulis || '').trim(), category:String(r.category || r.Kategori || '').trim() || defCat, isbn:String(r.isbn || r.ISBN || r.Barcode || '').trim(), qty:parseInt(r.qty || r.Jumlah || 1) || 1 })).filter(r => r.title && r.isbn);
+    if (!mapped.length) throw new Error('Tidak ada data valid. Gunakan tombol Template.');
+    const res = await apiCall('bulk_add_books', mapped);
+    if (res) await refresh(res.message); else showLoader(false);
+  } catch (err) { showLoader(false); showToast(err.message, true); }
+  e.target.value = '';
+}
+
+// ---------- Anggota ----------
+function membersHTML() {
+  return `<div class="card"><div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4"><h3 class="font-black text-slate-800 text-lg md:text-xl w-full">Daftar Anggota Aktif</h3><div class="flex w-full md:w-auto gap-2 flex-wrap justify-end"><button onclick="downloadExcelTemplate()" title="Template" class="btn !shadow-none !px-3.5 bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center"><i data-lucide="download" class="w-4 h-4"></i></button><label title="Upload Excel" class="btn platinum-gradient !px-3.5 flex items-center justify-center cursor-pointer"><i data-lucide="upload" class="w-4 h-4"></i><input type="file" accept=".xlsx,.xls" class="hidden" onchange="handleExcelUpload(event)"></label><label title="Upload Foto Massal" class="btn bg-purple-700 text-white !px-3.5 flex items-center justify-center cursor-pointer"><i data-lucide="images" class="w-4 h-4"></i><input type="file" webkitdirectory directory multiple accept="image/*" class="hidden" onchange="handleBulkPhotoUpload(event)"></label><button onclick="openMemberModal()" title="Tambah Anggota" class="btn bg-emerald-800 text-white"><i data-lucide="plus" class="w-5 h-5"></i></button></div></div>
+    <div class="relative mb-6">
+      <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+      <input id="member-search" type="text" value="${esc(memberSearch)}" oninput="filterMembers(this.value)" placeholder="Cari nama, kelas, atau ID/NISN anggota..." class="inp !pl-11"/>
+    </div>
+    <div id="member-groups"></div></div>`;
+}
+function memberCardHTML(m) {
+  const uf = appState.loans.filter(l => l.MemberID === m.ID && l.FinePaid === 'belum').reduce((s,l) => s + N(l.Fine), 0);
+  return `<div class="p-3 md:p-4 bg-white rounded-3xl border ${uf>0?'border-red-200':'border-slate-100'} shadow-sm flex items-center gap-3 hover:border-emerald-500 transition"><div class="w-12 h-12 rounded-2xl bg-slate-200 overflow-hidden flex-shrink-0 border"><img src="${esc(m.PhotoUrl) || 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(m.Name)}" class="w-full h-full object-cover" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=Err'"/></div><div class="flex-1 overflow-hidden"><p class="font-black text-slate-800 truncate text-xs md:text-sm">${esc(m.Name)}${uf>0?`<span class="text-[8px] font-black bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1">Denda ${rp(uf)}</span>`:''}</p><p class="text-[9px] md:text-[10px] text-slate-500 font-bold uppercase tracking-widest truncate">${esc(m.Class)} • <span class="font-mono text-emerald-700">${esc(m.MemberID)}</span></p></div><div class="flex gap-1"><button onclick="openMemberModal('${esc(m.ID)}')" title="Edit" class="p-2 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-800 hover:text-white transition"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="printCard('${esc(m.ID)}')" title="Unduh Kartu (PDF)" class="p-2 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-800 hover:text-white transition"><i data-lucide="printer" class="w-4 h-4"></i></button><button onclick="deleteItem('Members','${esc(m.ID)}')" title="Hapus" class="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`;
+}
+function filterMembers(v) { memberSearch = v; renderMemberGroups(); }
+function renderMemberGroups() {
+  const el = $('member-groups'); if (!el) return;
+  const q = memberSearch.trim().toLowerCase();
+  const filtered = appState.members.filter(m => !q || [m.Name, m.Class, m.MemberID].some(v => String(v || '').toLowerCase().includes(q)));
+  if (!filtered.length) { el.innerHTML = empty(appState.members.length ? 'Tidak ada anggota yang cocok dengan pencarian "' + esc(memberSearch) + '".' : 'Belum ada data anggota.'); return; }
+  const groups = {};
+  filtered.forEach(m => { const c = String(m.Class || '').trim() || 'Tanpa Kelas'; (groups[c] = groups[c] || []).push(m); });
+  const orderedClasses = Object.keys(groups).sort((a,b) => a.localeCompare(b, 'id', { numeric:true, sensitivity:'base' }));
+  el.innerHTML = orderedClasses.map(cls => `
+    <div class="mb-7 last:mb-0">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full font-black text-xs uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="users" class="w-3.5 h-3.5"></i> Kelas ${esc(cls)}</div>
+        <span class="text-[10px] font-bold text-slate-400">${groups[cls].length} anggota</span>
+        <div class="flex-1 h-px bg-slate-100"></div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">${groups[cls].map(memberCardHTML).join('')}</div>
+    </div>`).join('');
+  try { lucide.createIcons(); } catch (e) {}
+}
+function previewMemberPhoto(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const img = $('member-photo-preview'), reader = new FileReader();
+  reader.onload = () => { img.src = reader.result; img.classList.remove('hide'); };
+  reader.readAsDataURL(f);
+}
+function openMemberModal(id) {
+  const editing = !!id;
+  $('member-modal-title').innerText = editing ? 'Edit Anggota' : 'Registrasi Manual';
+  $('member-edit-id').value = id || '';
+  $('form-member').reset();
+  $('member-id').disabled = false;
+  $('member-photo-url').value = '';
+  $('member-photo-file').value = '';
+  $('member-photo-preview').src = ''; $('member-photo-preview').classList.add('hide');
+  if (editing) {
+    const m = appState.members.find(x => x.ID === id);
+    if (!m) return showToast('Anggota tidak ditemukan.', true);
+    $('member-id').value = m.MemberID; $('member-id').disabled = true;
+    $('member-name').value = m.Name; $('member-class').value = m.Class; $('member-valid').value = m.ValidUntil;
+    $('member-photo-url').value = m.PhotoUrl || '';
+    if (m.PhotoUrl) { $('member-photo-preview').src = m.PhotoUrl; $('member-photo-preview').classList.remove('hide'); }
+  }
+  toggleModal('modal-member', true);
+}
+async function submitMember(e) {
+  e.preventDefault();
+  const editId = $('member-edit-id').value;
+  const file = $('member-photo-file').files[0];
+  let photoUrl = $('member-photo-url').value;
+  const memberClass = $('member-class').value.trim(), memberName = $('member-name').value.trim();
+  if (file) {
+    showLoader(true, 'Mengunggah foto ke Drive...');
+    try { photoUrl = await uploadImage(file, 'foto anggota', { type:'member_photo', kelas:memberClass, nama:memberName }); }
+    catch (err) { showLoader(false); return showToast(err.message, true); }
+  }
+  const p = { memberId:$('member-id').value.trim(), name:memberName, class:memberClass, validUntil:$('member-valid').value.trim(), photoUrl };
+  showLoader(true, editId ? 'Memperbarui anggota...' : 'Mendaftarkan anggota...');
+  const res = editId ? await apiCall('update_member', { id: editId, ...p }) : await apiCall('add_member', p);
+  if (res) { toggleModal('modal-member', false); $('form-member').reset(); $('member-id').disabled = false; await refresh(res.message); warnIfPrivate(); } else showLoader(false);
+}
+function downloadExcelTemplate() {
+  const ws = XLSX.utils.json_to_sheet([{ memberId:'0012345678', name:'Contoh Siswa Satu', class:'7A', validUntil:'Juli 2027', photoUrl:'' },{ memberId:'0012345679', name:'Contoh Siswa Dua', class:'7B', validUntil:'Juli 2027', photoUrl:'' }]);
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Members');
+  XLSX.writeFile(wb, 'Template_Anggota_E-Library.xlsx'); showToast('Template Excel diunduh.');
+}
+async function handleExcelUpload(e) {
+  const file = e.target.files[0]; if (!file) return;
+  try {
+    showLoader(true, 'Membaca file Excel...');
+    const wb = XLSX.read(await file.arrayBuffer()), rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval:'' });
+    const mapped = rows.map(r => ({ memberId:String(r.memberId || r['ID Anggota'] || r.NISN || '').trim(), name:String(r.name || r.Nama || '').trim(), class:String(r.class || r.Kelas || '').trim(), validUntil:String(r.validUntil || r.Berlaku || 'Juli 2027').trim(), photoUrl:String(r.photoUrl || r.Foto || '').trim() })).filter(r => r.memberId && r.name);
+    if (!mapped.length) throw new Error('Tidak ada data valid. Gunakan tombol Template.');
+    const res = await apiCall('bulk_add_members', mapped);
+    if (res) await refresh(res.message); else showLoader(false);
+  } catch (err) { showLoader(false); showToast(err.message, true); }
+  e.target.value = '';
+}
+
+// ---------- Upload Foto Massal (folder foto -> dicocokkan ke NISN / Nama Lengkap / Nomor Urut di database) ----------
+function normPhotoKey(s) {
+  return String(s || '').toLowerCase().replace(/\.[^/.]+$/, '').normalize('NFKD').replace(/[^a-z0-9]+/g, '');
+}
+async function handleBulkPhotoUpload(e) {
+  const allFiles = Array.from(e.target.files || []);
+  const files = allFiles.filter(f => f.type.startsWith('image/'));
+  e.target.value = '';
+  if (!appState.members.length) return showToast('Belum ada data anggota untuk dicocokkan.', true);
+  if (!files.length) return showToast('Tidak ada file foto (gambar) yang ditemukan di folder tersebut.', true);
+
+  const byId = {}, byName = {}, byOrder = {};
+  appState.members.forEach((m, i) => { byId[normPhotoKey(m.MemberID)] = m; byName[normPhotoKey(m.Name)] = m; byOrder[i + 1] = m; });
+
+  const r = await Swal.fire({ icon:'question', title:'Upload Foto Massal', html:`Ditemukan <b>${files.length}</b> file foto di folder ini.<br>Sistem akan mencocokkan tiap nama file ke <b>NISN</b>, <b>Nama Lengkap</b>, atau <b>Nomor Urut</b> anggota di database (1, 2, 3, ...), lalu mengunggahnya satu per satu.<br><br>Lanjutkan?`, showCancelButton:true, confirmButtonColor:'#7e22ce', cancelButtonColor:'#64748b', confirmButtonText:'Ya, Proses', cancelButtonText:'Batal' });
+  if (!r.isConfirmed) return;
+
+  let ok = 0, unmatched = 0, failed = 0;
+  const problems = [];
+  showLoader(true, `Mengunggah foto 0/${files.length}`);
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    const t = Swal.getTitle(); if (t) t.textContent = `Mengunggah foto ${i + 1}/${files.length}`;
+    const key = normPhotoKey(f.name);
+    let member = byId[key] || byName[key];
+    if (!member && /^\d+$/.test(key)) member = byOrder[parseInt(key, 10)]; // fallback: nama file angka murni = nomor urut di database
+    if (!member) { unmatched++; problems.push(f.name + ' — tidak cocok dengan NISN/Nama/Nomor Urut manapun'); continue; }
+    try {
+      const url = await uploadImage(f, 'foto anggota', { type:'member_photo', kelas: member.Class, nama: member.Name });
+      await apiPost('update_member', { id: member.ID, memberId: member.MemberID, name: member.Name, class: member.Class, validUntil: member.ValidUntil, photoUrl: url });
+      member.PhotoUrl = url;
+      ok++;
+    } catch (err) { failed++; problems.push(f.name + ' — ' + err.message); }
+  }
+  showLoader(false);
+  await refresh();
+  warnIfPrivate();
+  const summary = `Berhasil: <b>${ok}</b> foto` + (unmatched ? `, Tidak cocok: <b>${unmatched}</b>` : '') + (failed ? `, Gagal unggah: <b>${failed}</b>` : '') + '.';
+  Swal.fire({
+    icon: (unmatched || failed) ? 'warning' : 'success',
+    title: 'Upload Foto Massal Selesai',
+    html: `<p style="font-size:13px">${summary}</p>` + (problems.length ? `<div style="max-height:160px;overflow:auto;text-align:left;font-size:11px;margin-top:10px;background:#f8fafc;padding:8px;border-radius:8px;border:1px solid #e2e8f0">${problems.map(x => esc(x)).join('<br>')}</div>` : '')
+  });
+}
+
+async function deleteItem(sheet, id) {
+  const r = await Swal.fire({ title:'Hapus Data?', text:'Data yang dihapus tidak dapat dikembalikan.', icon:'warning', showCancelButton:true, confirmButtonColor:'#dc2626', cancelButtonColor:'#64748b', confirmButtonText:'Ya, Hapus', cancelButtonText:'Batal' });
+  if (!r.isConfirmed) return;
+  showLoader(true, 'Menghapus...');
+  const res = await apiCall('delete_item', {}, { sheet, id });
+  if (res) await refresh(res.message); else showLoader(false);
+}
+
+// ---------- E-Book ----------
+function ebooksHTML() {
+  return `<div class="card">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+      <h3 class="font-black text-slate-800 text-lg md:text-xl w-full">Perpustakaan Digital (E-Book)</h3>
+      <div class="flex w-full md:w-auto gap-2 flex-wrap justify-end">
+        <button onclick="downloadExcelTemplateEbooks()" title="Template" class="btn !shadow-none !px-3.5 bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center"><i data-lucide="download" class="w-4 h-4"></i></button>
+        <label title="Upload Excel" class="btn platinum-gradient !px-3.5 flex items-center justify-center cursor-pointer"><i data-lucide="upload" class="w-4 h-4"></i><input type="file" accept=".xlsx,.xls" class="hidden" onchange="handleExcelUploadEbooks(event)"></label>
+        <label title="Upload Cover Massal (nama file = Kode E-Book)" class="btn bg-teal-700 text-white !px-3.5 flex items-center justify-center cursor-pointer"><i data-lucide="images" class="w-4 h-4"></i><input type="file" multiple accept="image/*" class="hidden" onchange="handleBulkCoverUpload(event)"></label>
+        <label title="Upload PDF Massal (nama file = Kode E-Book)" class="btn bg-purple-700 text-white !px-3.5 flex items-center justify-center cursor-pointer"><i data-lucide="file-up" class="w-4 h-4"></i><input type="file" multiple accept="application/pdf" class="hidden" onchange="handleBulkPdfUpload(event)"></label>
+        <button onclick="openEbookModal()" title="Tambah E-Book" class="btn bg-emerald-800 text-white flex items-center gap-2 justify-center"><i data-lucide="plus" class="w-5 h-5"></i></button>
+      </div>
+    </div>
+    <div class="relative mb-6">
+      <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+      <input id="ebook-search" type="text" value="${esc(ebookSearch)}" oninput="filterEbooks(this.value)" placeholder="Cari judul, penulis, kode, atau kategori E-Book..." class="inp !pl-11"/>
+    </div>
+    <div id="ebook-groups"></div>
+  </div>`;
+}
+function ebookCardHTML(bk) {
+  return `<div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden hover:border-emerald-500 transition flex flex-col"><div class="aspect-[3/4] bg-slate-100 overflow-hidden"><img src="${esc(bk.CoverUrl) || 'https://api.dicebear.com/7.x/shapes/svg?seed=' + encodeURIComponent(bk.Title || bk.Code)}" class="w-full h-full object-cover" onerror="this.src='https://api.dicebear.com/7.x/shapes/svg?seed=Err'"/></div><div class="p-3 flex-1 flex flex-col"><p class="font-black text-slate-800 text-xs md:text-sm line-clamp-2">${esc(bk.Title)}</p><p class="text-[9px] text-slate-500 font-bold uppercase truncate mt-0.5">${esc(bk.Author) || '-'} • ${esc(bk.Category)}</p><p class="text-[9px] font-mono text-emerald-700 font-bold mt-1">${esc(bk.Code)}</p><div class="flex gap-1 mt-auto pt-2">${bk.PdfUrl ? `<a href="${esc(bk.PdfUrl)}" target="_blank" rel="noopener" class="flex-1 text-center text-[10px] font-black bg-emerald-700 text-white px-2 py-2 rounded-lg hover:bg-emerald-800">Baca</a>` : `<span class="flex-1 text-center text-[10px] font-bold text-slate-400 px-2 py-2">Belum ada PDF</span>`}<button onclick="openEbookModal('${esc(bk.ID)}')" title="Edit" class="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-800 hover:text-white transition"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="deleteItem('Ebooks','${esc(bk.ID)}')" title="Hapus" class="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div></div>`;
+}
+function filterEbooks(v) { ebookSearch = v; renderEbookGroups(); }
+function renderEbookGroups() {
+  const el = $('ebook-groups'); if (!el) return;
+  const q = ebookSearch.trim().toLowerCase();
+  const filtered = appState.ebooks.filter(bk => !q || [bk.Title, bk.Author, bk.Code, bk.Category].some(v => String(v || '').toLowerCase().includes(q)));
+  if (!filtered.length) {
+    el.innerHTML = empty(appState.ebooks.length ? 'Tidak ada E-Book yang cocok dengan pencarian "' + esc(ebookSearch) + '".' : 'Belum ada E-Book.');
     return;
   }
+  const cats = getCategories(), groups = {};
+  filtered.forEach(bk => { const c = String(bk.Category || '').trim() || 'Tanpa Kategori'; (groups[c] = groups[c] || []).push(bk); });
+  const orderedCats = [...cats.filter(c => groups[c]), ...Object.keys(groups).filter(c => !cats.includes(c)).sort()];
+  el.innerHTML = orderedCats.map(cat => `
+    <div class="mb-7 last:mb-0">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full font-black text-xs uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="bookmark" class="w-3.5 h-3.5"></i> ${esc(cat)}</div>
+        <span class="text-[10px] font-bold text-slate-400">${groups[cat].length} judul</span>
+        <div class="flex-1 h-px bg-slate-100"></div>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">${groups[cat].map(ebookCardHTML).join('')}</div>
+    </div>`).join('');
+  try { lucide.createIcons(); } catch (e) {}
+}
+function previewEbookCover(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const img = $('ebook-cover-preview'), reader = new FileReader();
+  reader.onload = () => { img.src = reader.result; img.classList.remove('hide'); };
+  reader.readAsDataURL(f);
+}
+function openEbookModal(id) {
+  const editing = !!id;
+  $('ebook-modal-title').innerText = editing ? 'Edit E-Book' : 'Tambah E-Book';
+  $('ebook-edit-id').value = id || '';
+  const cats = getCategories();
+  $('ebook-category').innerHTML = cats.map(c => `<option>${esc(c)}</option>`).join('') || '<option>Umum</option>';
+  $('form-ebook').reset();
+  $('ebook-cover-url').value = ''; $('ebook-pdf-url').value = ''; $('ebook-pdf-id').value = '';
+  $('ebook-cover-preview').src = ''; $('ebook-cover-preview').classList.add('hide');
+  $('ebook-code').disabled = false;
+  if (editing) {
+    const bk = appState.ebooks.find(x => x.ID === id);
+    if (!bk) return showToast('E-Book tidak ditemukan.', true);
+    $('ebook-code').value = bk.Code; $('ebook-code').disabled = true;
+    $('ebook-title').value = bk.Title; $('ebook-author').value = bk.Author;
+    if (cats.includes(bk.Category)) $('ebook-category').value = bk.Category;
+    $('ebook-cover-url').value = bk.CoverUrl || ''; $('ebook-pdf-url').value = bk.PdfUrl || ''; $('ebook-pdf-id').value = bk.PdfFileId || '';
+    if (bk.CoverUrl) { $('ebook-cover-preview').src = bk.CoverUrl; $('ebook-cover-preview').classList.remove('hide'); }
+  }
+  toggleModal('modal-ebook', true);
+}
+async function submitEbook(e) {
+  e.preventDefault();
+  const editId = $('ebook-edit-id').value;
+  const code = $('ebook-code').value.trim(), title = $('ebook-title').value.trim();
+  const coverFile = $('ebook-cover-file').files[0], pdfFile = $('ebook-pdf-file').files[0];
+  let coverUrl = $('ebook-cover-url').value, pdfUrl = $('ebook-pdf-url').value, pdfFileId = $('ebook-pdf-id').value;
+  try {
+    if (coverFile) { showLoader(true, 'Mengunggah cover...'); coverUrl = await uploadImage(coverFile, 'cover ebook', { type:'ebook_cover', kode:code }); }
+    if (pdfFile) {
+      if (pdfFile.type !== 'application/pdf') throw new Error('File E-Book wajib berformat .pdf');
+      showLoader(true, 'Mengunggah file PDF...');
+      const res = await apiPost('upload_file', { dataUrl: await fileToDataURL(pdfFile), filename: pdfFile.name, type:'ebook_pdf', kode:code, nama:title });
+      pdfUrl = res.url; pdfFileId = res.id || '';
+      if (res.shared === false) uploadPrivate = true;
+    }
+  } catch (err) { showLoader(false); return showToast(err.message, true); }
+  const p = { code, title, author:$('ebook-author').value.trim(), category:$('ebook-category').value, coverUrl, pdfUrl, pdfFileId };
+  showLoader(true, editId ? 'Memperbarui E-Book...' : 'Menyimpan E-Book...');
+  const res = editId ? await apiCall('update_ebook', { id: editId, ...p }) : await apiCall('add_ebook', p);
+  if (res) { toggleModal('modal-ebook', false); $('form-ebook').reset(); $('ebook-code').disabled = false; await refresh(res.message); warnIfPrivate(); } else showLoader(false);
+}
+function downloadExcelTemplateEbooks() {
+  const cat = getCategories()[0] || 'Pendidikan';
+  const ws = XLSX.utils.json_to_sheet([{ title:'Contoh Judul E-Book Satu', category:cat, author:'Nama Penulis' },{ title:'Contoh Judul E-Book Dua', category:cat, author:'Nama Penulis' }]);
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Ebooks');
+  XLSX.writeFile(wb, 'Template_EBook_E-Library.xlsx'); showToast('Template Excel diunduh.');
+}
+// Kode E-Book dibuat otomatis (EB-xxx) melanjutkan nomor tertinggi yang sudah ada, agar tidak bentrok dengan kode manual.
+function nextEbookCode(offset) {
+  let max = 0;
+  appState.ebooks.forEach(bk => { const m = /^EB-(\d+)$/i.exec(String(bk.Code || '').trim()); if (m) max = Math.max(max, parseInt(m[1], 10)); });
+  return 'EB-' + String(max + offset).padStart(3, '0');
+}
+async function handleExcelUploadEbooks(e) {
+  const file = e.target.files[0]; if (!file) return;
+  try {
+    showLoader(true, 'Membaca file Excel...');
+    const wb = XLSX.read(await file.arrayBuffer()), rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval:'' });
+    const defCat = getCategories()[0] || 'Pendidikan';
+    let n = 0;
+    const mapped = rows.map(r => ({
+      title: String(r.title || r.Judul || '').trim(),
+      author: String(r.author || r.Penulis || '').trim(),
+      category: String(r.category || r.Kategori || '').trim() || defCat,
+      coverUrl: '', pdfUrl: '', pdfFileId: ''
+    })).filter(r => r.title).map(r => ({ ...r, code: nextEbookCode(++n) }));
+    if (!mapped.length) throw new Error('Tidak ada data valid. Gunakan tombol Template.');
+    const res = await apiCall('bulk_add_ebooks', mapped);
+    if (res) await refresh(res.message); else showLoader(false);
+  } catch (err) { showLoader(false); showToast(err.message, true); }
+  e.target.value = '';
+}
 
-  e.respondWith(
-    fetch(r).then(res => {
-      if (res && (res.ok || res.type === 'opaque')) {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(r, copy)).catch(() => {});
-      }
-      return res;
-    }).catch(() => caches.match(r))
-  );
-});
+// ---------- Upload PDF Massal E-Book (file dicocokkan ke Kode E-Book berdasarkan nama file) ----------
+async function handleBulkPdfUpload(e) {
+  const allFiles = Array.from(e.target.files || []);
+  const files = allFiles.filter(f => f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
+  e.target.value = '';
+  if (!appState.ebooks.length) return showToast('Belum ada data E-Book untuk dicocokkan.', true);
+  if (!files.length) return showToast('Tidak ada file PDF yang ditemukan.', true);
+
+  const byCode = {};
+  appState.ebooks.forEach(bk => { byCode[normPhotoKey(bk.Code)] = bk; });
+
+  const r = await Swal.fire({ icon:'question', title:'Upload PDF Massal', html:`Ditemukan <b>${files.length}</b> file PDF.<br>Sistem akan mencocokkan tiap nama file ke <b>Kode E-Book</b> (contoh: EB-001.pdf), lalu mengunggahnya satu per satu.<br><br>Lanjutkan?`, showCancelButton:true, confirmButtonColor:'#7e22ce', cancelButtonColor:'#64748b', confirmButtonText:'Ya, Proses', cancelButtonText:'Batal' });
+  if (!r.isConfirmed) return;
+
+  let ok = 0, unmatched = 0, failed = 0;
+  const problems = [];
+  showLoader(true, `Mengunggah PDF 0/${files.length}`);
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    const t = Swal.getTitle(); if (t) t.textContent = `Mengunggah PDF ${i + 1}/${files.length}`;
+    const bk = byCode[normPhotoKey(f.name)];
+    if (!bk) { unmatched++; problems.push(f.name + ' — kode tidak cocok dengan E-Book manapun'); continue; }
+    try {
+      const res = await apiPost('upload_file', { dataUrl: await fileToDataURL(f), filename: f.name, type:'ebook_pdf', kode: bk.Code, nama: bk.Title });
+      await apiPost('update_ebook', { id: bk.ID, code: bk.Code, title: bk.Title, author: bk.Author, category: bk.Category, coverUrl: bk.CoverUrl, pdfUrl: res.url, pdfFileId: res.id || '' });
+      if (res.shared === false) uploadPrivate = true;
+      bk.PdfUrl = res.url; bk.PdfFileId = res.id || '';
+      ok++;
+    } catch (err) { failed++; problems.push(f.name + ' — ' + err.message); }
+  }
+  showLoader(false);
+  await refresh();
+  warnIfPrivate();
+  const summary = `Berhasil: <b>${ok}</b> PDF` + (unmatched ? `, Tidak cocok: <b>${unmatched}</b>` : '') + (failed ? `, Gagal unggah: <b>${failed}</b>` : '') + '.';
+  Swal.fire({
+    icon: (unmatched || failed) ? 'warning' : 'success',
+    title: 'Upload PDF Massal Selesai',
+    html: `<p style="font-size:13px">${summary}</p>` + (problems.length ? `<div style="max-height:160px;overflow:auto;text-align:left;font-size:11px;margin-top:10px;background:#f8fafc;padding:8px;border-radius:8px;border:1px solid #e2e8f0">${problems.map(x => esc(x)).join('<br>')}</div>` : '')
+  });
+}
+
+// ---------- Upload Cover Massal E-Book (file dicocokkan ke Kode E-Book berdasarkan nama file) ----------
+async function handleBulkCoverUpload(e) {
+  const allFiles = Array.from(e.target.files || []);
+  const files = allFiles.filter(f => f.type.startsWith('image/'));
+  e.target.value = '';
+  if (!appState.ebooks.length) return showToast('Belum ada data E-Book untuk dicocokkan.', true);
+  if (!files.length) return showToast('Tidak ada file gambar yang ditemukan.', true);
+
+  const byCode = {};
+  appState.ebooks.forEach(bk => { byCode[normPhotoKey(bk.Code)] = bk; });
+
+  const r = await Swal.fire({ icon:'question', title:'Upload Cover Massal', html:`Ditemukan <b>${files.length}</b> file gambar.<br>Sistem akan mencocokkan tiap nama file ke <b>Kode E-Book</b> (contoh: EB-001.jpg), lalu mengunggahnya satu per satu.<br><br>Lanjutkan?`, showCancelButton:true, confirmButtonColor:'#0f766e', cancelButtonColor:'#64748b', confirmButtonText:'Ya, Proses', cancelButtonText:'Batal' });
+  if (!r.isConfirmed) return;
+
+  let ok = 0, unmatched = 0, failed = 0;
+  const problems = [];
+  showLoader(true, `Mengunggah cover 0/${files.length}`);
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    const t = Swal.getTitle(); if (t) t.textContent = `Mengunggah cover ${i + 1}/${files.length}`;
+    const bk = byCode[normPhotoKey(f.name)];
+    if (!bk) { unmatched++; problems.push(f.name + ' — kode tidak cocok dengan E-Book manapun'); continue; }
+    try {
+      const url = await uploadImage(f, 'cover ebook', { type:'ebook_cover', kode: bk.Code });
+      await apiPost('update_ebook', { id: bk.ID, code: bk.Code, title: bk.Title, author: bk.Author, category: bk.Category, coverUrl: url, pdfUrl: bk.PdfUrl, pdfFileId: bk.PdfFileId });
+      bk.CoverUrl = url;
+      ok++;
+    } catch (err) { failed++; problems.push(f.name + ' — ' + err.message); }
+  }
+  showLoader(false);
+  await refresh();
+  warnIfPrivate();
+  const summary = `Berhasil: <b>${ok}</b> cover` + (unmatched ? `, Tidak cocok: <b>${unmatched}</b>` : '') + (failed ? `, Gagal unggah: <b>${failed}</b>` : '') + '.';
+  Swal.fire({
+    icon: (unmatched || failed) ? 'warning' : 'success',
+    title: 'Upload Cover Massal Selesai',
+    html: `<p style="font-size:13px">${summary}</p>` + (problems.length ? `<div style="max-height:160px;overflow:auto;text-align:left;font-size:11px;margin-top:10px;background:#f8fafc;padding:8px;border-radius:8px;border:1px solid #e2e8f0">${problems.map(x => esc(x)).join('<br>')}</div>` : '')
+  });
+}
+
+// ---------- Sirkulasi ----------
+function circHTML() {
+  const tb = (m,l) => `<button onclick="setScanMode('${m}')" class="flex-1 py-3 rounded-2xl font-black text-[10px] md:text-sm tracking-widest transition ${scanMode===m?'platinum-gradient shadow-md':'text-slate-400 hover:bg-slate-50'}">${l}</button>`;
+  const v = scanMode === 'visit', ttl = { loan:'Peminjaman', return:'Pengembalian', visit:'Kunjungan Perpus' }[scanMode];
+  const inp = (id,l,ph,hide) => `<div class="flex items-end gap-2 ${hide?'hide':''}"><div class="flex-1"><label class="lbl ml-2">${l}</label><input id="${id}" ${hide?'':'required'} class="inp text-center font-mono text-base md:text-lg" placeholder="${ph}"/></div><button type="button" onclick="openScanner('${id}')" class="p-3 bg-slate-800 text-white rounded-xl hover:bg-slate-700 shadow-lg"><i data-lucide="camera" class="w-6 h-6"></i></button></div>`;
+  return `<div class="max-w-xl mx-auto space-y-6 pt-2"><div class="flex bg-white p-1.5 rounded-3xl border border-slate-100 shadow-sm">${tb('loan','SCAN PINJAM')}${tb('return','SCAN KEMBALI')}${tb('visit','SCAN MASUK')}</div>
+    <form onsubmit="submitCirc(event)" class="card !p-6 md:!p-10 shadow-xl space-y-5"><div class="text-center mb-4"><div class="w-16 h-16 mx-auto bg-slate-50 rounded-3xl flex items-center justify-center mb-3 text-emerald-700 border"><i data-lucide="${v?'door-open':'scan-line'}" class="w-8 h-8"></i></div><h3 class="font-black text-xl text-slate-800 uppercase">Mode ${ttl}</h3></div>
+    ${inp('circ-book','ID / Barcode BUKU','Scan Buku...',v)}${inp('circ-member','ID / Barcode ANGGOTA','Scan Kartu Siswa...',false)}
+    <button class="btn platinum-gradient w-full py-4 tracking-widest">PROSES ${v?'KUNJUNGAN':'TRANSAKSI'}</button></form></div>`;
+}
+function setScanMode(m) { scanMode = m; renderView(); }
+async function submitCirc(e) {
+  e.preventDefault();
+  const memberId = $('circ-member').value.trim(), bookId = $('circ-book').value.trim(), v = scanMode === 'visit';
+  showLoader(true, v ? 'Mencatat kunjungan...' : 'Memproses transaksi...');
+  const res = v ? await apiCall('record_visit', { memberId }) : await apiCall('process_circulation', { bookId, memberId, mode:scanMode });
+  if (!res) return showLoader(false);
+  await initApp();
+  if (res.fine > 0) Swal.fire({ icon:'warning', title:'Ada Denda', text:res.message }); else showToast(res.message);
+}
+
+// ---------- Scanner ----------
+function openScanner(id) {
+  if (!window.Html5Qrcode) return showToast('Library scanner lambat dimuat.', true);
+  scanTarget = id; $('scanner-modal').classList.remove('hide');
+  if (!qr) { const F = Html5QrcodeSupportedFormats; qr = new Html5Qrcode('reader', { formatsToSupport:[F.CODE_128,F.CODE_39,F.EAN_13,F.QR_CODE] }); }
+  qr.start({ facingMode:'environment' }, { fps:15, qrbox:{ width:250, height:120 } }, t => {
+    const e = $(scanTarget); if (e) e.value = t.trim().replace(/\s/g,'_');
+    showToast('Terbaca: ' + t); closeScanner();
+  }, () => {}).catch(() => { showToast('Kamera tidak diizinkan/ditemukan.', true); closeScanner(); });
+}
+function closeScanner() { $('scanner-modal').classList.add('hide'); if (qr) qr.stop().catch(() => {}); scanTarget = null; }
+
+// ---------- Laporan ----------
+const memberList = c => c ? appState.members.filter(m => String(m.Class || '').trim().toUpperCase() === c) : appState.members;
+const bookList = t => t ? appState.books.filter(b => String(b.Title || '').trim().toUpperCase() === t) : appState.books;
+
+function arrears() {
+  const fpd = N(S().finePerDay), r = [];
+  appState.loans.forEach(l => {
+    const c = mem(l.MemberID).Class || '-';
+    if (l.FinePaid === 'belum') r.push([l.MemberName, c, l.BookTitle, 'Denda belum lunas', N(l.Fine)]);
+    else if (l.Status === 'borrowed' && late(l) > 0) r.push([l.MemberName, c, l.BookTitle, `Belum kembali (telat ${late(l)} hari)`, late(l) * fpd]);
+  });
+  return r;
+}
+function reportDef(k) {
+  const A = appState;
+  if (k === 'activity') return { t:'Laporan Akumulasi Keaktifan Anggota', n:'Keaktifan = kunjungan masuk + transaksi pinjam buku.', f:'Laporan_Keaktifan', c:['Nama','Kelas','Masuk','Pinjam','Total','Keaktifan'], r:getActivity().rows.map(x => [x.name,x.cls,x.visits,x.loans,x.score,x.pct.toFixed(1)+'%']) };
+  if (k === 'available') return { t:'Laporan Buku Tersedia', n:'', f:'Buku_Tersedia', c:['Judul','Penulis','Kategori','Barcode'], r:A.books.filter(b => b.Status === 'available').map(b => [b.Title,b.Author,b.Category,b.ISBN]) };
+  if (k === 'borrowed') return { t:'Laporan Buku Sedang Dipinjam', n:'', f:'Buku_Dipinjam', c:['Judul','Peminjam','Kelas','Tgl Pinjam','Jatuh Tempo','Keterangan'], r:A.loans.filter(l => l.Status === 'borrowed').map(l => [l.BookTitle,l.MemberName,mem(l.MemberID).Class||'-',fmtDate(l.LoanDate),fmtDate(l.DueDate),late(l)>0?`Terlambat ${late(l)} hari`:'Aktif']) };
+  if (k === 'returned') return { t:'Laporan Buku Dikembalikan', n:'', f:'Buku_Dikembalikan', c:['Judul','Peminjam','Tgl Pinjam','Tgl Kembali','Denda'], r:A.loans.filter(l => l.Status === 'returned').map(l => [l.BookTitle,l.MemberName,fmtDate(l.LoanDate),fmtDate(l.ReturnDate),N(l.Fine)>0?rp(l.Fine)+(l.FinePaid==='lunas'?' (lunas)':' (belum)'):'-']) };
+  const a = arrears();
+  return { t:'Laporan Tunggakan Akhir', n:`Total tunggakan: ${rp(a.reduce((s,x) => s + x[4], 0))}.`, f:'Tunggakan_Akhir', c:['Nama','Kelas','Judul Buku','Jenis','Jumlah'], r:a.map(x => [x[0],x[1],x[2],x[3],rp(x[4])]) };
+}
+function reportsHTML() {
+  const uc = a => [...new Set(a)].filter(Boolean).sort(), opt = (a,all) => `<option value="">${all}</option>` + a.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  const cls = uc(appState.members.map(m => String(m.Class || '').trim().toUpperCase())), bt = uc(appState.books.map(b => String(b.Title || '').trim().toUpperCase()));
+  const { w, h } = cardSize();
+  const box = (ic,c,t,d,body) => `<div class="card flex flex-col justify-between"><div><div class="w-12 h-12 bg-${c}-50 text-${c}-600 rounded-2xl flex items-center justify-center mb-4"><i data-lucide="${ic}" class="w-6 h-6"></i></div><h3 class="text-lg font-black text-slate-800 mb-1">${t}</h3><p class="text-xs text-slate-500 leading-relaxed mb-4 font-medium">${d}</p></div><div class="flex flex-col gap-2">${body}</div></div>`;
+  const btn = (id,c,txt,fn) => `<button id="${id}" onclick="${fn}" class="btn bg-${c}-700 text-white">${txt}</button>`;
+  const simple = (k,ic,c,t,d) => box(ic,c,t,d,btn('btn-'+k,c,`Cetak PDF (${reportDef(k).r.length} data)`,`printReport('${k}')`));
+  return `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+    ${box('credit-card','emerald','Cetak Kartu Anggota',`ZIP: 1 file PDF (2 halaman) per anggota. A4: banyak kartu digabung dalam satu lembar A4 untuk cetak massal.`,`<select id="class-select" onchange="updateCounts()" class="inp">${opt(cls,'Semua Kelas')}</select><div class="grid grid-cols-2 gap-2">${btn('btn-cards','emerald','',"printReport('cards')")}${btn('btn-cards-a4','teal','',"printReport('cards-a4')")}</div>`)}
+    ${box('scan-barcode','slate','Barcode Buku','Stiker barcode bertuliskan nama sekolah &amp; perpustakaan, kertas A4',`<select id="book-select" onchange="updateCounts()" class="inp">${opt(bt,'Semua Buku')}</select>${btn('btn-barcodes','slate','',"printReport('barcodes')")}`)}
+    ${simple('activity','activity','purple','Laporan Keaktifan','Akumulasi persentase keaktifan anggota (kunjungan + pinjam buku).')}
+    ${simple('available','book-open-check','green','Buku Tersedia','Daftar buku yang saat ini ada di rak dan siap dipinjam.')}
+    ${simple('borrowed','arrow-left-right','orange','Buku Dipinjam','Daftar buku yang sedang dipinjam beserta jatuh tempo.')}
+    ${simple('returned','undo-2','blue','Buku Dikembalikan','Riwayat buku yang sudah dikembalikan beserta denda.')}
+    ${simple('arrears','alert-triangle','red','Tunggakan Akhir','Denda belum lunas dan buku terlambat yang belum kembali.')}
+  </div>`;
+}
+function updateCounts() {
+  const mc = memberList($('class-select') ? $('class-select').value : '').length, bc = bookList($('book-select') ? $('book-select').value : '').length;
+  const set = (id,t,n) => { const b = $(id); if (!b) return; b.innerText = t; b.disabled = !n; b.classList.toggle('opacity-40', !n); };
+  set('btn-cards', `ZIP (${mc} Anggota)`, mc);
+  set('btn-cards-a4', `A4 (${mc} Anggota)`, mc);
+  set('btn-barcodes', `Cetak Barcode Buku (${bc} Buku)`, bc);
+}
+
+// ---------- PDF ----------
+function reportMargin() {
+  const s = S();
+  const v = (k, d) => { const n = N(s[k] !== undefined && s[k] !== '' ? s[k] : d); return n; };
+  return [v('reportMarginTop', DEF.reportMarginTop), v('reportMarginLeft', DEF.reportMarginLeft), v('reportMarginBottom', DEF.reportMarginBottom), v('reportMarginRight', DEF.reportMarginRight)];
+}
+const a4 = (f, m = 8) => ({ margin:m, filename:f, image:{ type:'jpeg', quality:.98 }, html2canvas:{ scale:3, useCORS:true, imageTimeout:15000 }, jsPDF:{ unit:'mm', format:'a4', orientation:'portrait' }, pagebreak:{ mode:['css','legacy'], avoid:['tr','.stk'] } });
+const cardOpt = (w,h) => ({ margin:0, image:{ type:'jpeg', quality:.98 }, html2canvas:{ scale:5, useCORS:true, imageTimeout:15000 }, jsPDF:{ unit:'mm', format:[w,h], orientation:w >= h ? 'landscape' : 'portrait' } });
+function pdfChain(pages, opt, blob) {
+  const j = opt.jsPDF;
+  let w = html2pdf().set(opt).from(pages[0], 'string').toPdf();
+  for (let i = 1; i < pages.length; i++) w = w.get('pdf').then(p => p.addPage(j.format, j.orientation)).from(pages[i], 'string').toContainer().toCanvas().toPdf();
+  return blob ? w.outputPdf('blob') : w.save();
+}
+async function pdfWork(pages, opt, blob) {
+  pages = [].concat(pages); // 1 elemen = 1 halaman (kartu depan/belakang, halaman laporan/barcode)
+  try { return await pdfChain(pages, opt, blob); }
+  // fallback jika gambar eksternal (foto anggota/logo dari Drive) gagal dimuat: hanya buang gambar dari URL eksternal,
+  // gambar base64 (barcode & QR tanda tangan) tetap dipertahankan agar tidak ikut hilang dari PDF
+  catch (e) { return await pdfChain(pages.map(h => h.replace(/<img[^>]*src="(?!data:)[^"]*"[^>]*>/g, '')), opt, blob); }
+}
+function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
+function barcode(v) {
+  const c = document.createElement('canvas');
+  try {
+    if (typeof JsBarcode !== 'function') throw new Error('Library JsBarcode belum termuat (cek koneksi/CDN).');
+    JsBarcode(c, String(v), { format:'CODE128', width:2, height:50, displayValue:false, margin:0 });
+  } catch (e) { console.error('Gagal membuat barcode untuk "' + v + '":', e.message || e); }
+  return c.toDataURL('image/png');
+}
+
+function kop() {
+  const s = S(), im = u => u ? `<img src="${esc(u)}" crossorigin="anonymous" style="height:60px;max-width:60px;object-fit:contain">` : '<div style="width:60px"></div>';
+  const logoL = s.reportLogoLeft || s.logoLeft, logoR = s.reportLogoRight || s.logoRight;
+  return `<div style="font-family:'Times New Roman',Times,serif;color:#000">
+    <div style="display:flex;align-items:center;justify-content:center;gap:14px;padding-bottom:4px">
+      ${im(logoL)}
+      <div style="text-align:center;flex:1;line-height:1.35">
+        <div style="font-size:16px;font-weight:bold;text-transform:uppercase;letter-spacing:.5px">${esc(s.schoolName || 'PERPUSTAKAAN SEKOLAH')}</div>
+        ${s.libraryName ? `<div style="font-size:13px;font-weight:bold;text-transform:uppercase">${esc(s.libraryName)}</div>` : ''}
+        <div style="font-size:10px">${esc(s.address)}</div>
+        <div style="font-size:10px">${esc(s.contact)}</div>
+      </div>
+      ${im(logoR)}
+    </div>
+    <div style="border-bottom:3px solid #000;margin-top:4px"></div>
+    <div style="border-bottom:1px solid #000;margin-top:1px"></div>
+  </div>`;
+}
+function sign() {
+  const s = S(), dots = '.....................';
+  return `<div style="display:flex;justify-content:space-between;margin-top:30px;font-size:11px;font-family:'Times New Roman',Times,serif;page-break-inside:avoid">
+    <div style="text-align:center;width:45%">Mengetahui,<br>Kepala Sekolah<br><br><br><br><br><b><u>${esc(s.headmaster || dots)}</u></b></div>
+    <div style="text-align:center;width:45%">${esc(s.city)}${s.city ? ', ' : ''}${fmtDate(new Date())}<br>Petugas Perpustakaan<br><br><br><br><br><b><u>${esc(s.librarian || dots)}</u></b></div>
+  </div>`;
+}
+
+// Setiap halaman laporan dibuat sebagai elemen PDF terpisah (kop selalu ikut di setiap halaman)
+const ROWS_PER_PAGE = 24;
+function reportPages(d) {
+  const chunks = []; for (let i = 0; i < d.r.length; i += ROWS_PER_PAGE) chunks.push(d.r.slice(i, i + ROWS_PER_PAGE));
+  if (!chunks.length) chunks.push([]);
+  const th = 'padding:6px 8px;font-size:11px;font-weight:bold;text-align:left;border:1px solid #000;background:#fff;';
+  const td = 'padding:5px 8px;font-size:11px;border:1px solid #000;';
+  return chunks.map((rows, pi) => {
+    const isFirst = pi === 0, isLast = pi === chunks.length - 1, startNo = pi * ROWS_PER_PAGE;
+    return `<div style="font-family:'Times New Roman',Times,serif;color:#000">${kop()}
+      ${isFirst ? `<h3 style="text-align:center;margin:14px 0 2px;font-size:13px;font-weight:bold;text-transform:uppercase;text-decoration:underline">${esc(d.t)}</h3>${d.n ? `<p style="text-align:center;margin:0 0 4px;font-size:10px;font-style:italic">${esc(d.n)}</p>` : ''}<p style="text-align:right;margin:0 0 10px;font-size:10px">Dicetak: ${fmtDate(new Date())}</p>` : `<div style="height:16px"></div>`}
+      <table style="width:100%;border-collapse:collapse"><thead><tr>${['No',...d.c].map(c => `<th style="${th}">${c}</th>`).join('')}</tr></thead><tbody>${rows.length ? rows.map((r,i) => `<tr>${[startNo+i+1,...r].map((v,j) => `<td style="${td}${j===0?'text-align:center;':''}">${esc(v)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${d.c.length+1}" style="${td}text-align:center;font-style:italic">Tidak ada data</td></tr>`}</tbody></table>
+      ${isLast ? sign() : ''}
+      </div>`;
+  });
+}
+
+// Stiker 60x36 mm, 3 kolom x 6 baris = 18 stiker per halaman A4 (ruang disisakan untuk kop di setiap halaman).
+const STK = { cols: 3, rows: 6 };
+function stickerHTML(b) {
+  const s = S();
+  return `<div style="width:60mm;height:36mm;flex:none;box-sizing:border-box;border:1px dashed #94a3b8;border-radius:2mm;padding:2mm 2.5mm;font-family:Arial,sans-serif;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden">
+    <div style="text-align:center;line-height:1.15;border-bottom:1px solid #cbd5e1;padding-bottom:1mm"><div style="font-size:8px;font-weight:900;text-transform:uppercase;white-space:nowrap;overflow:hidden">${esc(s.schoolName || 'NAMA SEKOLAH')}</div><div style="font-size:7px;font-weight:bold;color:#047857;white-space:nowrap;overflow:hidden">${esc(s.libraryName || 'Perpustakaan')}</div></div>
+    <div style="font-size:8px;font-weight:bold;line-height:1.2;height:2.4em;overflow:hidden;text-align:center">${esc(b.Title)}</div>
+    <div style="text-align:center"><img src="${barcode(b.ISBN)}" style="width:88%;height:11mm"/><div style="font-size:7px;font-family:monospace;color:#334155;font-weight:bold">${esc(b.ISBN)}</div></div>
+  </div>`;
+}
+function stickerPages(L) {
+  const per = STK.cols * STK.rows, pages = [];
+  for (let i = 0; i < L.length; i += per) {
+    pages.push(`<div style="width:210mm;box-sizing:border-box;padding:10mm;font-family:Arial,sans-serif"><div style="display:flex;flex-wrap:wrap;align-content:flex-start;justify-content:center;gap:3mm">${L.slice(i, i + per).map(stickerHTML).join('')}</div></div>`);
+  }
+  return pages;
+}
+
+async function printReport(k) {
+  if (k === 'cards') return cardsZip();
+  if (k === 'cards-a4') return cardsA4();
+  if (k === 'barcodes') {
+    const L = bookList($('book-select') ? $('book-select').value : '');
+    if (!L.length) return showToast('Tidak ada data buku.', true);
+    return job('Menyiapkan PDF...', () => pdfWork(stickerPages(L), a4('Barcode_Buku.pdf', 0)), 'PDF berhasil diunduh.');
+  }
+  const d = reportDef(k);
+  if (!d.r.length) return showToast('Tidak ada data untuk dicetak.', true);
+  job('Menyiapkan PDF...', () => pdfWork(reportPages(d), a4(d.f + '.pdf', reportMargin())), 'PDF berhasil diunduh.');
+}
+
+// ---------- Kartu anggota (ukuran ID, 1 halaman = 1 kartu) ----------
+function cardSize(cfg = S()) { const c = (v,d) => Math.min(210, Math.max(30, parseFloat(v) || d)); return { w:c(cfg.cardWidth, 85.6), h:c(cfg.cardHeight, 54) }; }
+if (window.qrcode && qrcode.stringToBytesFuncs) qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'];
+function qrImg(t) { try { const q = qrcode(0, 'M'); q.addData(t); q.make(); return q.createDataURL(4, 0); } catch (e) { return ''; } }
+function cardDim(cfg) { const { w, h } = cardSize(cfg), W = Math.round(w * PX), H = Math.round(h * PX) - 1; return { W, H, k: Math.min(W, H) / 204, land: W >= H }; }
+function cardBgLayer(url, opacity) {
+  if (!url) return '';
+  const op = Math.max(0, Math.min(100, N(opacity !== undefined && opacity !== '' ? opacity : DEF.cardBgOpacity))) / 100;
+  return `<img src="${esc(url)}" crossorigin="anonymous" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:${op};z-index:0"/>`;
+}
+function bottomBarGradient(cfg) {
+  const raw = (cfg.cardBottomColors !== undefined && cfg.cardBottomColors !== '') ? cfg.cardBottomColors : DEF.cardBottomColors;
+  const colors = String(raw).split(',').map(s => s.trim()).filter(Boolean);
+  const list = colors.length ? colors : DEF.cardBottomColors.split(',');
+  return `linear-gradient(90deg,${list.join(',')})`;
+}
+function cardShell(d, inner, bgUrl, bgOpacity, font, cfg) {
+  const radiusMM = N((cfg && cfg.cardRadius !== undefined && cfg.cardRadius !== '') ? cfg.cardRadius : DEF.cardRadius);
+  const radiusPx = radiusMM * PX;
+  return `<div style="position:relative;width:${d.W}px;height:${d.H}px;box-sizing:border-box;overflow:hidden;background:#fff;border:1px solid #064e3b;border-radius:${radiusPx}px;font:${10 * d.k}px ${font || DEF.cardFont};color:#0f172a">${cardBgLayer(bgUrl,bgOpacity)}<div style="position:relative;z-index:1;width:100%;height:100%;display:flex;flex-direction:column">${inner}<div style="height:.65em;flex:none;background:${bottomBarGradient(cfg || {})}"></div></div></div>`;
+}
+
+// ----- SISI DEPAN -----
+function cardFront(m, cfg = S()) {
+  const d = cardDim(cfg), pw = Math.round(d.land ? d.W * .26 : d.W * .4), ph = Math.round(pw * 1.25);
+  const photo = esc(m.PhotoUrl) || 'https://api.dicebear.com/7.x/initials/png?seed=' + encodeURIComponent(m.Name);
+  const headerColor = esc(cfg.cardHeaderColor || DEF.cardHeaderColor);
+  const row = (l, v) => `<tr><td style="padding:0 .3em .25em 0;width:3.8em;vertical-align:top">${l}</td><td style="padding:0 .3em .25em 0;vertical-align:top">:</td><td style="padding:0 0 .25em;font-weight:900;word-break:break-word">${esc(v)}</td></tr>`;
+  const kopLines = [cfg.libraryName, cfg.address, cfg.contact].filter(Boolean).map(x => `<div style="font-size:.55em;opacity:.9;line-height:1.25">${esc(x)}</div>`).join('');
+  const logoBox = url => `<div style="width:3.6em;height:3.6em;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none">${url ? `<img src="${esc(url)}" crossorigin="anonymous" style="width:3.6em;height:3.6em;object-fit:contain;image-rendering:-webkit-optimize-contrast"/>` : ''}</div>`;
+  const hasL = !!cfg.logoLeft, hasR = !!cfg.logoRight, singleLogo = hasL !== hasR;
+  return cardShell(d, `
+    <div style="background:${headerColor};color:#fff;display:flex;align-items:center;gap:.6em;padding:.6em .8em;flex:none">
+      ${(!singleLogo || hasL) ? logoBox(cfg.logoLeft) : ''}
+      <div style="line-height:1.15;min-width:0;flex:1;text-align:${singleLogo ? 'left' : 'center'}"><div style="font-size:.95em;font-weight:900">${esc(cfg.schoolName)}</div>${kopLines}</div>
+      ${(!singleLogo || hasR) ? logoBox(cfg.logoRight) : ''}
+    </div>
+    <div style="text-align:center;font-size:.85em;font-weight:900;color:#064e3b;margin:.5em .9em 0;padding-bottom:.2em;border-bottom:1px solid #a7f3d0;flex:none">KARTU ANGGOTA PERPUSTAKAAN</div>
+    <div style="flex:1;display:flex;flex-direction:${d.land ? 'row' : 'column'};align-items:center;justify-content:center;gap:.8em;padding:.4em .9em">
+      <img src="${photo}" crossorigin="anonymous" style="width:${pw}px;height:${ph}px;object-fit:cover;border:2px solid #e2e8f0;border-radius:4px;flex:none"/>
+      <div style="flex:1;min-width:0;width:100%">
+        <table style="border-collapse:collapse;font-size:.68em;font-weight:800;line-height:1.3;color:#1e293b">${row('NAMA', m.Name)}${row('NISN', m.MemberID)}${row('KELAS', m.Class)}</table>
+        <img src="${barcode(m.MemberID)}" style="display:block;width:100%;height:2.4em;margin-top:.2em"/>
+        <div style="font-size:.7em;font-family:monospace;font-weight:bold;color:#064e3b;text-align:center">${esc(m.MemberID)}</div>
+      </div>
+    </div>`, cfg.cardBgFront, cfg.cardBgOpacity, cfg.cardFont, cfg);
+}
+
+// ----- SISI BELAKANG: tata tertib (dapat dikustomisasi) + titimangsa + QR ttd Kepala Perpustakaan & Kepala Madrasah + quotes -----
+function cardBack(m, cfg = S()) {
+  const d = cardDim(cfg), headerColor = esc(cfg.cardHeaderColor || DEF.cardHeaderColor);
+  const rules = String(cfg.cardRules || DEF.cardRules).split('\n').map(s => s.trim()).filter(Boolean);
+  const dateLine = (cfg.city || '').trim() ? `${esc(cfg.city.trim())}, ${fmtDate(new Date())}` : '';
+  const spaceDateSign = N(cfg.cardSpaceDateSign !== undefined && cfg.cardSpaceDateSign !== '' ? cfg.cardSpaceDateSign : DEF.cardSpaceDateSign);
+  const spaceSignQuote = N(cfg.cardSpaceSignQuote !== undefined && cfg.cardSpaceSignQuote !== '' ? cfg.cardSpaceSignQuote : DEF.cardSpaceSignQuote);
+  const sg = (role, name) => { const q = qrImg('Ttd ' + role + ': ' + (name || '-') + ' | ' + (cfg.schoolName || '')); return `<div style="text-align:center;font-size:.58em;font-weight:800;display:flex;flex-direction:column;align-items:center"><div>${role}</div>${q ? `<img src="${q}" style="width:4.1em;height:4.1em;margin:.15em 0"/>` : '<div style="height:4.1em"></div>'}<div style="text-decoration:underline">${esc(name || '..................')}</div></div>`; };
+  const quote = String(cfg.cardQuote !== undefined ? cfg.cardQuote : DEF.cardQuote).trim();
+  const quoteAuthor = String(cfg.cardQuoteAuthor !== undefined ? cfg.cardQuoteAuthor : DEF.cardQuoteAuthor).trim();
+  return cardShell(d, `
+    <div style="background:${headerColor};color:#fff;text-align:center;padding:.6em .8em;font-size:.88em;font-weight:900;letter-spacing:.05em;flex:none">TATA TERTIB PERPUSTAKAAN</div>
+    <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding:.45em .9em .3em">
+      <div>${rules.map((r, i) => `<div style="font-size:.6em;font-weight:600;line-height:1.3;margin-bottom:.15em;color:#1e293b">${i + 1}. ${esc(r)}</div>`).join('')}</div>
+      ${dateLine ? `<div style="text-align:right;font-size:.58em;font-weight:700;color:#1e293b;margin-top:.3em">${dateLine}</div>` : ''}
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0 .3em;margin-top:${spaceDateSign}em">${sg('Kepala Perpustakaan', cfg.librarian)}${sg('Kepala Madrasah', cfg.headmaster)}</div>
+      ${quote ? `<div style="text-align:center;font-size:.5em;font-style:italic;line-height:1.3;margin-top:${spaceSignQuote}em;padding:0 .2em;color:#334155">&ldquo;${esc(quote)}&rdquo;${quoteAuthor ? `<div style="font-weight:800;font-style:normal;margin-top:.1em;color:#064e3b">&mdash; ${esc(quoteAuthor)}</div>` : ''}</div>` : ''}
+    </div>`, cfg.cardBgBack, cfg.cardBgOpacity, cfg.cardFont, cfg);
+}
+// 1 file PDF per anggota = 2 halaman (depan, belakang), ukuran halaman = ukuran kartu
+const cardBlob = m => { const { w, h } = cardSize(); return pdfWork([`<div>${cardFront(m)}</div>`, `<div>${cardBack(m)}</div>`], cardOpt(w, h), true); };
+
+function printCard(id) {
+  const m = mem(id); if (!m.ID) return showToast('Anggota tidak ditemukan.', true);
+  job('Membuat kartu...', async () => download(await cardBlob(m), 'Kartu_' + safe(m.Name) + '.pdf'), 'Kartu diunduh.');
+}
+function cardsZip() {
+  const sel = $('class-select') ? $('class-select').value : '', L = memberList(sel);
+  if (!L.length) return showToast('Tidak ada data anggota.', true);
+  job('Membuat kartu 0/' + L.length, async () => {
+    const zip = new JSZip();
+    for (let i = 0; i < L.length; i++) {
+      const t = Swal.getTitle(); if (t) t.textContent = `Membuat kartu ${i+1}/${L.length}`;
+      zip.file(`${String(i+1).padStart(3,'0')}_${safe(L[i].Class)}_${safe(L[i].Name)}.pdf`, await cardBlob(L[i]));
+    }
+    download(await zip.generateAsync({ type:'blob' }), 'Kartu_Anggota' + (sel ? '_' + safe(sel) : '') + '.zip');
+  }, 'ZIP kartu berhasil diunduh.');
+}
+// Cetak kartu massal dalam satu lembar A4 (banyak kartu per halaman): semua sisi depan dahulu, lalu semua sisi belakang
+// dengan urutan & posisi yang sama, sehingga mudah dipotong dan dicocokkan setelah dicetak bolak-balik.
+function cardGridPages(members, side) {
+  const { w, h } = cardSize(), margin = 10, gap = 3;
+  const cols = Math.max(1, Math.floor((210 - margin * 2 + gap) / (w + gap)));
+  const rows = Math.max(1, Math.floor((297 - margin * 2 + gap) / (h + gap)));
+  const per = cols * rows, pages = [];
+  for (let i = 0; i < members.length; i += per) {
+    const chunk = members.slice(i, i + per);
+    pages.push(`<div style="width:210mm;box-sizing:border-box;padding:${margin}mm;font-family:Arial,sans-serif"><div style="display:flex;flex-wrap:wrap;gap:${gap}mm">${chunk.map(m => side === 'front' ? cardFront(m) : cardBack(m)).join('')}</div></div>`);
+  }
+  return pages.length ? pages : [`<div style="width:210mm;padding:${margin}mm"></div>`];
+}
+function cardsA4() {
+  const sel = $('class-select') ? $('class-select').value : '', L = memberList(sel);
+  if (!L.length) return showToast('Tidak ada data anggota.', true);
+  job('Menyiapkan PDF A4...', () => pdfWork([...cardGridPages(L, 'front'), ...cardGridPages(L, 'back')], a4('Kartu_Anggota_A4' + (sel ? '_' + safe(sel) : '') + '.pdf', 0)), 'PDF kartu A4 berhasil diunduh.');
+}
+
+// ---------- Pengaturan ----------
+function settingsHTML() {
+  const f = (k,l,t='text',ph='',ex='') => `<div><label class="lbl">${l}</label><input id="set-${k}" type="${t}" placeholder="${ph}" ${ex} class="inp"/></div>`;
+  const imgField = (k,l) => `<div><label class="lbl">${l}</label><div class="flex items-center gap-3 mt-1"><img id="prev-${k}" src="" class="hide w-16 h-16 rounded-xl object-contain border bg-white"/><div class="flex-1"><input type="file" accept="image/*" id="file-${k}" class="inp" onchange="previewSettingImage('${k}')"/><input type="hidden" id="set-${k}"/></div><button type="button" onclick="clearSettingImage('${k}')" title="Hapus" class="p-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button></div></div>`;
+  const FONT_OPTS = [["Arial, sans-serif","Arial"],["'Times New Roman', Times, serif","Times New Roman"],["Georgia, serif","Georgia"],["'Courier New', Courier, monospace","Courier New"],["Verdana, sans-serif","Verdana"],["'Trebuchet MS', sans-serif","Trebuchet MS"],["Tahoma, sans-serif","Tahoma"],["'Segoe UI', sans-serif","Segoe UI"]];
+  const sec = (ic,t,d,body) => `<div class="card"><h3 class="font-black text-slate-800 text-lg flex items-center gap-2"><i data-lucide="${ic}" class="w-5 h-5 text-emerald-600"></i> ${t}</h3><p class="text-xs text-slate-400 font-bold mb-5">${d}</p>${body}</div>`;
+  return `<form onsubmit="submitSettings(event)" oninput="schedulePreview()" class="max-w-3xl mx-auto space-y-4 md:space-y-6">
+    ${sec('building-2','Profil Instansi','Create your own custom',`<div class="space-y-4">${f('schoolName','Nama Sekolah')}${f('libraryName','Nama Perpustakaan')}${f('address','Alamat')}<div class="grid grid-cols-2 gap-4">${f('contact','Telepon / Email')}${f('city','Kota (titimangsa laporan & kartu)')}</div><div class="grid grid-cols-2 gap-4">${f('headmaster','Nama Kepala Sekolah')}${f('librarian','Nama Petugas Perpustakaan')}</div></div>`)}
+    ${sec('repeat','Pengaturan Pinjaman','Aturan durasi peminjaman dan denda keterlambatan.',`<div class="grid grid-cols-2 gap-4">${f('loanDurationDays','Durasi Pinjam (Hari)','number','','min="1"')}${f('finePerDay','Denda / Hari (Rp)','number','','min="0"')}</div>`)}
+    ${sec('tags','Jenis / Kategori Buku & E-Book','Satu kategori per baris. Dipakai pada pilihan kategori buku, E-Book (termasuk pengelompokan rak E-Book), dan template Excel.',`<textarea id="set-bookCategories" rows="5" class="inp" placeholder="Pendidikan&#10;Sains&#10;Novel"></textarea>`)}
+    ${sec('image','Logo Kartu Anggota','Logo yang tampil di kop KARTU ANGGOTA (sisi depan), disimpan di folder Drive terpisah dari logo laporan (ASSETS_ELIBRARY/Logo Kartu, nama file KARTU_KIRI/KARTU_KANAN). Gunakan gambar resolusi tinggi/persegi (PNG transparan disarankan) agar tidak buram saat dicetak.',`<div class="grid grid-cols-2 gap-4">${imgField('logoLeft','Logo Kiri (Kartu)')}${imgField('logoRight','Logo Kanan (Kartu)')}</div>`)}
+    ${sec('file-text','Logo Laporan (Kop Surat)','Logo yang tampil di kop setiap PDF laporan &amp; barcode buku, disimpan di folder Drive terpisah dari logo kartu di atas (ASSETS_ELIBRARY/Logo Laporan, nama file LAPORAN_KIRI/LAPORAN_KANAN). Jika kedua kolom di bawah dikosongkan, sistem memakai logo kartu sebagai cadangan (kiri &amp; kanan). Jika Anda mengisi salah satu kolom saja, hanya logo itu yang tampil di laporan — sisi yang kosong TIDAK akan otomatis diisi logo kartu.',`<div class="grid grid-cols-2 gap-4">${imgField('reportLogoLeft','Logo Kiri (Laporan)')}${imgField('reportLogoRight','Logo Kanan (Laporan)')}</div>`)}
+    ${sec('layout-panel-top','Margin Cetak PDF Laporan','Atur jarak margin atas, bawah, kiri, dan kanan (mm) saat mencetak PDF laporan (Keaktifan, Buku Tersedia/Dipinjam/Dikembalikan, Tunggakan Akhir).',`<div class="grid grid-cols-2 gap-4">${f('reportMarginTop','Margin Atas (mm)','number','','min="0" max="60" step="1"')}${f('reportMarginBottom','Margin Bawah (mm)','number','','min="0" max="60" step="1"')}${f('reportMarginLeft','Margin Kiri (mm)','number','','min="0" max="60" step="1"')}${f('reportMarginRight','Margin Kanan (mm)','number','','min="0" max="60" step="1"')}</div>`)}
+    ${sec('credit-card','Pengaturan Cetak Kartu','Sesuaikan tampilan, warna, font, jarak elemen, dan isi tata tertib kartu anggota',`<div class="grid md:grid-cols-2 gap-6"><div class="space-y-4"><div><label class="lbl">Preset Ukuran</label><select id="set-preset" onchange="applyPreset()" class="inp"><option value="85.6x54">ID Card Landscape — 85,6 × 54 mm</option><option value="54x85.6">ID Card Portrait — 54 × 85,6 mm</option><option value="custom">Kustom</option></select></div><div class="grid grid-cols-2 gap-4">${f('cardWidth','Lebar (mm)','number','','min="30" max="210" step="0.1"')}${f('cardHeight','Tinggi (mm)','number','','min="30" max="210" step="0.1"')}</div><div>${f('cardRadius','Radius Sudut Kartu (mm)','number','','min="0" max="10" step="0.1"')}</div>${imgField('cardBgFront','Background Sisi Depan')}${imgField('cardBgBack','Background Sisi Belakang')}<div><label class="lbl">Opasitas Background: <span id="opacity-val">${DEF.cardBgOpacity}</span>%</label><input id="set-cardBgOpacity" type="range" min="0" max="100" oninput="$('opacity-val').innerText=this.value" class="w-full"/></div><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Warna Background Kop Kartu</label><input id="set-cardHeaderColor" type="color" class="inp !p-1 !h-12 cursor-pointer"/></div><div><label class="lbl">Font Kartu</label><select id="set-cardFont" class="inp">${FONT_OPTS.map(o => `<option value="${o[0]}">${o[1]}</option>`).join('')}</select></div></div><div><label class="lbl">Warna Garis Bawah Kartu (list warna)</label><input id="set-cardBottomColors" class="inp" placeholder="#064e3b,#10b981,#064e3b"/><p class="text-[9px] text-slate-400 font-bold mt-1">Pisahkan dengan koma (kode HEX). Minimal 2 warna untuk membuat gradasi.</p></div><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Jarak Titimangsa ↔ TTD (em)</label>${f('cardSpaceDateSign','','number','','min="0" max="5" step="0.05"')}</div><div><label class="lbl">Jarak TTD ↔ Quotes (em)</label>${f('cardSpaceSignQuote','','number','','min="0" max="5" step="0.05"')}</div></div><div><label class="lbl">Isi Tata Tertib (satu poin per baris)</label><textarea id="set-cardRules" rows="5" class="inp" placeholder="Tulis satu poin tata tertib per baris..."></textarea></div><div><label class="lbl">Quotes di Kartu (tampil di bawah ttd)</label><textarea id="set-cardQuote" rows="2" class="inp" placeholder="Contoh: Membaca adalah jendela dunia..."></textarea></div><div><label class="lbl">Sumber / Pembicara Quotes</label><input id="set-cardQuoteAuthor" class="inp" placeholder="Contoh: Anonim, Nabi Muhammad SAW, dll"/></div></div><div><label class="lbl">Pratinjau (data contoh)</label><div id="card-preview" class="mt-1 overflow-auto p-2 bg-slate-50 rounded-xl border flex flex-wrap justify-center gap-3"></div></div></div>`)}
+    <button class="btn platinum-gradient w-full py-4 tracking-widest">SIMPAN PENGATURAN</button></form>`;
+}
+const SETTING_UPLOAD_TYPE = { logoLeft:'logo_left', logoRight:'logo_right', reportLogoLeft:'report_logo_left', reportLogoRight:'report_logo_right', cardBgFront:'card_bg_front', cardBgBack:'card_bg_back' };
+async function previewSettingImage(key) {
+  const fileInput = $('file-' + key), file = fileInput.files[0]; if (!file) return;
+  const prev = $('prev-' + key), reader = new FileReader();
+  reader.onload = () => { prev.src = reader.result; prev.classList.remove('hide'); };
+  reader.readAsDataURL(file);
+  try {
+    showLoader(true, 'Mengunggah gambar ...');
+    const url = await uploadImage(file, key, { type: SETTING_UPLOAD_TYPE[key] || key });
+    $('set-' + key).value = url;
+    showLoader(false);
+    schedulePreview();
+    warnIfPrivate();
+  } catch (err) { showLoader(false); showToast(err.message, true); }
+}
+function clearSettingImage(key) {
+  $('set-' + key).value = ''; $('file-' + key).value = '';
+  $('prev-' + key).classList.add('hide'); $('prev-' + key).src = '';
+  schedulePreview();
+}
+const formSettings = () => {
+  const o = {};
+  KEYS.forEach(k => { const e = $('set-' + k); o[k] = e ? e.value.trim() : ''; });
+  const catEl = $('set-bookCategories');
+  if (catEl) o.bookCategories = catEl.value.split('\n').map(s => s.trim()).filter(Boolean).join(',');
+  return o;
+};
+function populateSettings() {
+  const s = S();
+  KEYS.forEach(k => { const e = $('set-' + k); if (e) e.value = (s[k] !== undefined && s[k] !== '') ? s[k] : (DEF[k] !== undefined ? DEF[k] : ''); });
+  $('set-bookCategories').value = getCategories().join('\n');
+  ['logoLeft','logoRight','reportLogoLeft','reportLogoRight','cardBgFront','cardBgBack'].forEach(k => {
+    const url = $('set-' + k).value, prev = $('prev-' + k);
+    if (url) { prev.src = url; prev.classList.remove('hide'); } else { prev.classList.add('hide'); prev.src = ''; }
+  });
+  $('set-cardBgOpacity').value = (s.cardBgOpacity !== undefined && s.cardBgOpacity !== '') ? s.cardBgOpacity : DEF.cardBgOpacity;
+  $('opacity-val').innerText = $('set-cardBgOpacity').value;
+  const p = $('set-cardWidth').value + 'x' + $('set-cardHeight').value;
+  $('set-preset').value = ['85.6x54','54x85.6'].includes(p) ? p : 'custom';
+}
+function applyPreset() {
+  const v = $('set-preset').value; if (v === 'custom') return;
+  const [w, h] = v.split('x'); $('set-cardWidth').value = w; $('set-cardHeight').value = h;
+}
+function schedulePreview() { clearTimeout(pvTimer); pvTimer = setTimeout(refreshPreview, 300); }
+function refreshPreview() {
+  const el = $('card-preview'); if (!el) return;
+  const m = { Name:'Nama Siswa Contoh', Class:'7A', MemberID:'0012345678', PhotoUrl:'' }, c = formSettings(); el.innerHTML = cardFront(m, c) + cardBack(m, c);
+}
+async function submitSettings(e) {
+  e.preventDefault();
+  const p = formSettings(), { w, h } = cardSize(p);
+  p.cardWidth = w; p.cardHeight = h;
+  showLoader(true, 'Menyimpan pengaturan...');
+  const res = await apiCall('save_settings', p);
+  if (res) await refresh(res.message); else showLoader(false);
+}
+
+window.addEventListener('load', () => { buildNav(); initPwa(); initApp(); });
+</script>
+</body>
+</html>
