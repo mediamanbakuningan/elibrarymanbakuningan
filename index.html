@@ -42,6 +42,47 @@
 </head>
 <body>
 <div id="e-library-app">
+
+  <!-- HALAMAN LOGIN -->
+  <div id="login-screen" class="fixed inset-0 z-[900] overflow-y-auto" style="background:linear-gradient(135deg,#022c22 0%,#047857 55%,#064e3b 100%)">
+    <div class="min-h-full flex items-center justify-center p-4">
+      <div class="w-full max-w-md">
+        <div class="text-center text-white mb-6">
+          <div class="w-20 h-20 mx-auto rounded-3xl bg-white/15 border border-white/30 flex items-center justify-center overflow-hidden mb-4">
+            <i id="login-logo-fallback" data-lucide="library" class="w-10 h-10"></i>
+            <img id="login-logo-img" src="" class="hide w-full h-full object-contain p-2"/>
+          </div>
+          <h1 id="login-title" class="text-3xl font-black tracking-tight">E-LIBRARY</h1>
+          <p id="login-school" class="text-emerald-100 text-xs font-bold uppercase tracking-widest mt-1">Perpustakaan Digital</p>
+        </div>
+
+        <div class="bg-white rounded-[2rem] shadow-2xl p-6 md:p-8 space-y-5">
+          <div>
+            <button type="button" onclick="loginVisitor()" class="w-full platinum-gradient py-4 rounded-2xl font-black text-sm tracking-widest shadow-lg flex items-center justify-center gap-2">
+              <i data-lucide="book-marked" class="w-5 h-5"></i> MASUK SEBAGAI PENGUNJUNG
+            </button>
+            <p class="text-[10px] text-slate-400 font-bold text-center mt-2">Nikmati ratusan E-Book Gratis selamanya</p>
+          </div>
+
+          <div class="flex items-center gap-3"><div class="flex-1 h-px bg-slate-200"></div><span class="text-[10px] font-black text-slate-400 tracking-widest">ATAU LOGIN ADMIN</span><div class="flex-1 h-px bg-slate-200"></div></div>
+
+          <form onsubmit="loginAdmin(event)" class="space-y-3">
+            <div>
+              <label class="lbl">Password Admin</label>
+              <div class="relative">
+                <input id="login-password" type="password" autocomplete="current-password" required placeholder="Masukkan password" class="inp !pr-16"/>
+                <button type="button" onclick="toggleLoginPw()" id="login-pw-toggle" class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-700 mt-0.5">LIHAT</button>
+              </div>
+            </div>
+            <p id="login-msg" class="hide text-xs font-bold text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2"></p>
+            <button id="btn-login-admin" class="btn bg-slate-800 text-white w-full py-3.5 tracking-widest">Masuk sebagai Admin</button>
+          </form>
+        </div>
+        <p class="text-center text-[9px] font-bold text-emerald-200 tracking-widest mt-5">@2026 made by Albustomipauzi</p>
+      </div>
+    </div>
+  </div>
+
   <!-- SCANNER -->
   <div id="scanner-modal" class="fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[1000] flex flex-col items-center justify-center p-4 hide">
     <div class="w-full max-w-md bg-white rounded-[2rem] overflow-hidden shadow-2xl flex flex-col">
@@ -51,7 +92,7 @@
     </div>
   </div>
 
-  <div class="flex app-viewport overflow-hidden pb-20 lg:pb-0">
+  <div id="app-shell" class="hide flex app-viewport overflow-hidden pb-20 lg:pb-0">
     <aside class="w-72 glass-panel hidden lg:flex flex-col p-6 m-4 rounded-3xl z-10 shadow-lg">
       <div class="flex items-center gap-3 mb-10 px-2">
         <div id="sidebar-app-icon-box" class="platinum-gradient rounded-2xl shadow-lg flex-none flex items-center justify-center overflow-hidden" style="width:48px;height:48px">
@@ -85,7 +126,11 @@
           <p id="header-subtitle" class="text-emerald-700 text-xs md:text-sm font-bold tracking-widest uppercase mb-1">MEMUAT...</p>
           <h2 id="header-title" class="text-2xl md:text-4xl lg:text-5xl font-black text-3d-elegant uppercase leading-tight py-1">Memuat Sistem</h2>
         </div>
-        <div class="hidden md:block"><div class="bg-emerald-50 text-emerald-800 px-5 py-3 rounded-xl font-bold text-sm flex items-center gap-2 border border-emerald-200"><i class="w-5 h-5" data-lucide="calendar-days"></i> <span id="current-date-disp"></span></div></div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <div class="hidden md:block"><div class="bg-emerald-50 text-emerald-800 px-5 py-3 rounded-xl font-bold text-sm flex items-center gap-2 border border-emerald-200"><i class="w-5 h-5" data-lucide="calendar-days"></i> <span id="current-date-disp"></span></div></div>
+          <span id="role-badge" class="text-[10px] font-black tracking-widest bg-slate-800 text-white px-3 py-2 rounded-xl"></span>
+          <button onclick="confirmLogout()" class="btn !shadow-none bg-red-600 text-white !py-2.5 flex items-center gap-2"><i data-lucide="log-out" class="w-4 h-4"></i> Keluar</button>
+        </div>
       </header>
       <div id="app-content" class="w-full"></div>
     </main>
@@ -197,6 +242,94 @@ const mem = id => appState.members.find(m => m.ID === id) || {};
 const late = l => { const d = Math.floor((Date.now() - new Date(l.DueDate)) / 864e5); return d > 0 ? d : 0; };
 const getCategories = () => { const raw = (S().bookCategories || DEF.bookCategories); return raw.split(',').map(s => s.trim()).filter(Boolean); };
 
+// ---------- AUTENTIKASI ----------
+const AUTH_KEY = 'elib_auth';
+let auth = { role: null, token: '' };
+const isAdmin = () => auth.role === 'admin';
+const visibleTabs = () => isAdmin() ? TABS : TABS.filter(t => t[0] === 'ebooks');
+function loadAuth() {
+  try { const a = JSON.parse(localStorage.getItem(AUTH_KEY) || 'null'); if (a && (a.role === 'visitor' || (a.role === 'admin' && a.token))) auth = a; } catch (e) {}
+}
+function saveAuth() { try { localStorage.setItem(AUTH_KEY, JSON.stringify(auth)); } catch (e) {} }
+function setLoginMsg(t) { const m = $('login-msg'); if (!m) return; m.textContent = t || ''; m.classList.toggle('hide', !t); }
+function toggleLoginPw() {
+  const i = $('login-password'), show = i.type === 'password';
+  i.type = show ? 'text' : 'password'; $('login-pw-toggle').textContent = show ? 'SEMBUNYIKAN' : 'LIHAT';
+}
+function applyLoginBranding() {
+  const s = S();
+  $('login-school').textContent = s.schoolName || 'Perpustakaan Digital';
+  $('login-title').textContent = s.pwaShortName || 'E-LIBRARY';
+  const img = $('login-logo-img'), fb = $('login-logo-fallback'), url = s.logoLeft || s.pwaIcon || '';
+  if (url) { img.src = url; img.classList.remove('hide'); if (fb) fb.classList.add('hide'); }
+  else { img.classList.add('hide'); if (fb) fb.classList.remove('hide'); }
+  applyPwaSettings();
+}
+async function loadLoginBranding() {
+  try { const res = await apiPost('get_branding'); appState.settings = (res.data && res.data.settings) || {}; if (!auth.role) applyLoginBranding(); } catch (e) {}
+}
+async function loginAdmin(e) {
+  e.preventDefault();
+  const pw = $('login-password').value; if (!pw) return;
+  const btn = $('btn-login-admin'); btn.disabled = true; btn.textContent = 'Memeriksa...'; setLoginMsg('');
+  try {
+    const res = await apiPost('login', { password: pw });
+    auth = { role: 'admin', token: res.token }; saveAuth();
+    $('login-password').value = ''; appState.activeTab = 'dashboard';
+    await enterApp();
+  } catch (err) { setLoginMsg(err.message); }
+  finally { btn.disabled = false; btn.textContent = 'Masuk sebagai Admin'; }
+}
+async function loginVisitor() {
+  auth = { role: 'visitor', token: '' }; saveAuth();
+  appState.activeTab = 'ebooks';
+  await enterApp();
+}
+async function enterApp() {
+  $('login-screen').classList.add('hide');
+  $('app-shell').classList.remove('hide');
+  $('role-badge').textContent = isAdmin() ? 'ADMIN' : 'PENGUNJUNG';
+  buildNav();
+  await initApp();
+}
+function doLogout(expired) {
+  auth = { role: null, token: '' };
+  try { localStorage.removeItem(AUTH_KEY); } catch (e) {}
+  Object.assign(appState, { books: [], members: [], loans: [], visits: [], ebooks: [], activeTab: 'dashboard', setupError: false });
+  $('app-shell').classList.add('hide');
+  $('login-screen').classList.remove('hide');
+  $('app-content').innerHTML = '';
+  setLoginMsg('');
+  applyLoginBranding();
+  try { lucide.createIcons(); } catch (e) {}
+  if (expired) setTimeout(() => setLoginMsg('Sesi admin berakhir. Silakan masuk kembali.'), 400);
+}
+async function confirmLogout() {
+  const r = await Swal.fire({ title: 'Keluar?', text: 'Anda akan kembali ke halaman login.', icon: 'question', showCancelButton: true, confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b', confirmButtonText: 'Ya, Keluar', cancelButtonText: 'Batal' });
+  if (!r.isConfirmed) return;
+  if (isAdmin()) apiPost('logout').catch(() => {});
+  doLogout(false);
+}
+async function boot() {
+  loadAuth();
+  try { lucide.createIcons(); } catch (e) {}
+  if (auth.role) { await enterApp(); }
+  else { loadLoginBranding(); }
+}
+async function changePassword() {
+  const o = $('pw-old').value, n = $('pw-new').value, n2 = $('pw-new2').value;
+  if (!o || !n) return showToast('Lengkapi semua kolom password.', true);
+  if (n.length < 6) return showToast('Password baru minimal 6 karakter.', true);
+  if (n !== n2) return showToast('Konfirmasi password tidak sama.', true);
+  showLoader(true, 'Mengganti password...');
+  try {
+    const res = await apiPost('change_password', { oldPassword: o, newPassword: n });
+    auth.token = res.token; saveAuth();
+    ['pw-old', 'pw-new', 'pw-new2'].forEach(i => $(i).value = '');
+    showLoader(false); showToast(res.message);
+  } catch (err) { showLoader(false); showToast(err.message, true); }
+}
+
 // ---------- UI helpers ----------
 const Toast = Swal.mixin({ toast:true, position:'top-end', showConfirmButton:false, timer:3000, timerProgressBar:true });
 const showToast = (msg, err) => Toast.fire({ icon: err ? 'error' : 'success', title: msg });
@@ -209,9 +342,10 @@ async function job(text, fn, ok) {
 }
 async function refresh(msg) { await initApp(); if (msg) showToast(msg); }
 
-// apiPost: melempar Error dengan pesan ASLI dari server (dipakai untuk upload agar penyebab gagal terlihat)
+// apiPost: melempar Error dengan pesan ASLI dari server (dipakai untuk upload agar penyebab gagal terlihat).
+// Token admin otomatis disertakan; bila server menjawab code "AUTH" (sesi berakhir) pengguna dikembalikan ke halaman login.
 async function apiPost(action, payload = {}, extra = {}) {
-  const body = new URLSearchParams({ action, payload: JSON.stringify(payload), ...extra });
+  const body = new URLSearchParams({ action, payload: JSON.stringify(payload), token: auth.token || '', ...extra });
   let res;
   try { res = await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body }); }
   catch (e) { throw new Error('Tidak bisa menghubungi server. Periksa internet dan pastikan akses Web App = "Siapa saja".'); }
@@ -219,7 +353,10 @@ async function apiPost(action, payload = {}, extra = {}) {
   let json;
   try { json = JSON.parse(txt); }
   catch (e) { throw new Error('Server tidak membalas JSON. Biasanya izin Drive belum diberikan (jalankan authorizeDrive di editor) atau deployment belum "New version".'); }
-  if (json.status === 'error') throw new Error(json.message);
+  if (json.status === 'error') {
+    if (json.code === 'AUTH') doLogout(true);
+    throw new Error(json.message);
+  }
   return json;
 }
 // apiCall: versi lama (menampilkan toast error lalu mengembalikan null)
@@ -281,18 +418,21 @@ function warnIfPrivate() {
   Swal.fire({ icon:'warning', title:'File tersimpan, tapi belum publik', text:'File sudah masuk folder ASSETS_ELIBRARY / EBOOK di Drive, namun kebijakan Google Workspace menolak berbagi link publik sehingga file bisa tidak tampil/terbuka. Buka folder itu di Drive lalu atur berbagi ke "Siapa saja yang memiliki link" (Viewer).' });
 }
 
+// Admin memuat semua data; pengunjung hanya memuat E-Book + pengaturan tampilan (dibatasi juga di server).
 async function initApp() {
+  if (!auth.role) return;
   try {
     showLoader(true, 'Menghubungkan Server...');
     $('current-date-disp').innerText = new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-    const res = await apiCall('get_all_data');
+    const res = await apiCall(isAdmin() ? 'get_all_data' : 'get_public_data');
     if (res && res.data) {
       appState.setupError = false;
       ['books','members','loans','visits','ebooks'].forEach(k => appState[k] = res.data[k] || []);
       appState.settings = res.data.settings || {};
-    } else appState.setupError = true;
+    } else if (auth.role) appState.setupError = true;
   } catch (e) { appState.setupError = true; }
   finally { showLoader(false); }
+  if (!auth.role) return; // sesi berakhir -> sudah dikembalikan ke halaman login
   switchTab(appState.activeTab);
   await applyPwaSettings();
 }
@@ -457,17 +597,20 @@ async function forceUpdateApp() {
   location.href = location.pathname + '?_upd=' + Date.now();
 }
 
-// ---------- Navigasi ----------
+// ---------- Navigasi (menu mengikuti peran: admin = semua, pengunjung = E-Book saja) ----------
 function buildNav() {
-  $('sidebar-nav').innerHTML = TABS.map(t => `<button id="nav-${t[0]}" onclick="switchTab('${t[0]}')" class="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition font-bold"><i class="w-5 h-5" data-lucide="${t[2]}"></i> ${t[1]}</button>`).join('');
-  $('mobile-nav').innerHTML = TABS.map(t => `<button id="mob-${t[0]}" onclick="switchTab('${t[0]}')" class="flex flex-col items-center py-2 px-2 flex-1 min-w-[62px] rounded-2xl"><i class="w-6 h-6 mb-1" data-lucide="${t[2]}"></i><span class="text-[9px] font-bold">${t[1]}</span></button>`).join('');
+  const T = visibleTabs();
+  $('sidebar-nav').innerHTML = T.map(t => `<button id="nav-${t[0]}" onclick="switchTab('${t[0]}')" class="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition font-bold"><i class="w-5 h-5" data-lucide="${t[2]}"></i> ${t[1]}</button>`).join('');
+  $('mobile-nav').innerHTML = T.map(t => `<button id="mob-${t[0]}" onclick="switchTab('${t[0]}')" class="flex flex-col items-center py-2 px-2 flex-1 min-w-[62px] rounded-2xl"><i class="w-6 h-6 mb-1" data-lucide="${t[2]}"></i><span class="text-[9px] font-bold">${t[1]}</span></button>`).join('');
 }
 function switchTab(id) {
+  const T = visibleTabs();
+  if (!T.some(x => x[0] === id)) id = T[0][0]; // pengunjung selalu diarahkan ke E-Book
   appState.activeTab = id;
   const t = TABS.find(x => x[0] === id) || TABS[0];
   $('header-title').innerText = t[3];
   $('header-subtitle').innerText = S().schoolName || 'PERPUSTAKAAN SEKOLAH';
-  TABS.forEach(x => {
+  T.forEach(x => {
     const on = x[0] === id;
     $('nav-'+x[0]).className = 'w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition font-bold ' + (on ? 'platinum-gradient shadow-md' : 'text-slate-500 hover:bg-emerald-50 hover:text-emerald-800');
     $('mob-'+x[0]).className = 'flex flex-col items-center py-2 px-2 flex-1 min-w-[62px] rounded-2xl transition ' + (on ? 'bg-emerald-50 text-emerald-700' : 'text-slate-400');
@@ -770,18 +913,19 @@ async function deleteItem(sheet, id) {
   if (res) await refresh(res.message); else showLoader(false);
 }
 
-// ---------- E-Book ----------
+// ---------- E-Book (admin: kelola penuh; pengunjung: cari & baca saja) ----------
 function ebooksHTML() {
-  return `<div class="card">
-    <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-      <h3 class="font-black text-slate-800 text-lg md:text-xl w-full">Perpustakaan Digital (E-Book)</h3>
-      <div class="flex w-full md:w-auto gap-2 flex-wrap justify-end">
+  const adminTools = isAdmin() ? `<div class="flex w-full md:w-auto gap-2 flex-wrap justify-end">
         <button onclick="downloadExcelTemplateEbooks()" title="Template" class="btn !shadow-none !px-3.5 bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center"><i data-lucide="download" class="w-4 h-4"></i></button>
         <label title="Upload Excel" class="btn platinum-gradient !px-3.5 flex items-center justify-center cursor-pointer"><i data-lucide="upload" class="w-4 h-4"></i><input type="file" accept=".xlsx,.xls" class="hidden" onchange="handleExcelUploadEbooks(event)"></label>
         <label title="Upload Cover Massal (nama file = Kode E-Book)" class="btn bg-teal-700 text-white !px-3.5 flex items-center justify-center cursor-pointer"><i data-lucide="images" class="w-4 h-4"></i><input type="file" multiple accept="image/*" class="hidden" onchange="handleBulkCoverUpload(event)"></label>
         <label title="Upload PDF Massal (nama file = Kode E-Book)" class="btn bg-purple-700 text-white !px-3.5 flex items-center justify-center cursor-pointer"><i data-lucide="file-up" class="w-4 h-4"></i><input type="file" multiple accept="application/pdf" class="hidden" onchange="handleBulkPdfUpload(event)"></label>
         <button onclick="openEbookModal()" title="Tambah E-Book" class="btn bg-emerald-800 text-white flex items-center gap-2 justify-center"><i data-lucide="plus" class="w-5 h-5"></i></button>
-      </div>
+      </div>` : '';
+  return `<div class="card">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+      <h3 class="font-black text-slate-800 text-lg md:text-xl w-full">Perpustakaan Digital (E-Book)</h3>
+      ${adminTools}
     </div>
     <div class="relative mb-6">
       <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
@@ -791,7 +935,8 @@ function ebooksHTML() {
   </div>`;
 }
 function ebookCardHTML(bk) {
-  return `<div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden hover:border-emerald-500 transition flex flex-col"><div class="aspect-[3/4] bg-slate-100 overflow-hidden"><img src="${esc(bk.CoverUrl) || 'https://api.dicebear.com/7.x/shapes/svg?seed=' + encodeURIComponent(bk.Title || bk.Code)}" class="w-full h-full object-cover" onerror="this.src='https://api.dicebear.com/7.x/shapes/svg?seed=Err'"/></div><div class="p-3 flex-1 flex flex-col"><p class="font-black text-slate-800 text-xs md:text-sm line-clamp-2">${esc(bk.Title)}</p><p class="text-[9px] text-slate-500 font-bold uppercase truncate mt-0.5">${esc(bk.Author) || '-'} • ${esc(bk.Category)}</p><p class="text-[9px] font-mono text-emerald-700 font-bold mt-1">${esc(bk.Code)}</p><div class="flex gap-1 mt-auto pt-2">${bk.PdfUrl ? `<a href="${esc(bk.PdfUrl)}" target="_blank" rel="noopener" class="flex-1 text-center text-[10px] font-black bg-emerald-700 text-white px-2 py-2 rounded-lg hover:bg-emerald-800">Baca</a>` : `<span class="flex-1 text-center text-[10px] font-bold text-slate-400 px-2 py-2">Belum ada PDF</span>`}<button onclick="openEbookModal('${esc(bk.ID)}')" title="Edit" class="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-800 hover:text-white transition"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="deleteItem('Ebooks','${esc(bk.ID)}')" title="Hapus" class="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div></div>`;
+  const adminBtns = isAdmin() ? `<button onclick="openEbookModal('${esc(bk.ID)}')" title="Edit" class="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-800 hover:text-white transition"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="deleteItem('Ebooks','${esc(bk.ID)}')" title="Hapus" class="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '';
+  return `<div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden hover:border-emerald-500 transition flex flex-col"><div class="aspect-[3/4] bg-slate-100 overflow-hidden"><img src="${esc(bk.CoverUrl) || 'https://api.dicebear.com/7.x/shapes/svg?seed=' + encodeURIComponent(bk.Title || bk.Code)}" class="w-full h-full object-cover" onerror="this.src='https://api.dicebear.com/7.x/shapes/svg?seed=Err'"/></div><div class="p-3 flex-1 flex flex-col"><p class="font-black text-slate-800 text-xs md:text-sm line-clamp-2">${esc(bk.Title)}</p><p class="text-[9px] text-slate-500 font-bold uppercase truncate mt-0.5">${esc(bk.Author) || '-'} • ${esc(bk.Category)}</p><p class="text-[9px] font-mono text-emerald-700 font-bold mt-1">${esc(bk.Code)}</p><div class="flex gap-1 mt-auto pt-2">${bk.PdfUrl ? `<a href="${esc(bk.PdfUrl)}" target="_blank" rel="noopener" class="flex-1 text-center text-[10px] font-black bg-emerald-700 text-white px-2 py-2 rounded-lg hover:bg-emerald-800">Baca</a>` : `<span class="flex-1 text-center text-[10px] font-bold text-slate-400 px-2 py-2">Belum ada PDF</span>`}${adminBtns}</div></div></div>`;
 }
 function filterEbooks(v) { ebookSearch = v; renderEbookGroups(); }
 function renderEbookGroups() {
@@ -990,7 +1135,6 @@ function circHTML() {
 function setScanMode(m) { scanMode = m; renderView(); }
 // =====================================================================
 // NOTIF SUKSES / GAGAL SCAN — pinjam, kembali, masuk
-// Letakkan blok ini menggantikan fungsi submitCirc(e) lama (di bagian "Sirkulasi")
 // =====================================================================
 
 // Bunyi + getar singkat sebagai penanda (nada tinggi = sukses, nada rendah = gagal)
@@ -1040,8 +1184,7 @@ async function submitCirc(e) {
 
 // ---------- Scanner ----------
 // =====================================================================
-// SCANNER KAMERA + PENANGANAN IZIN — ganti fungsi openScanner(id) lama dengan blok ini
-// (closeScanner() tetap dipakai seperti semula)
+// SCANNER KAMERA + PENANGANAN IZIN
 // =====================================================================
 
 // Minta izin kamera secara eksplisit lebih dulu. Ini yang memunculkan popup "Izinkan kamera?" di browser.
@@ -1202,7 +1345,7 @@ async function pdfWork(pages, opt, blob) {
 }
 function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
 // =====================================================================
-// BARCODE CODE128 MANDIRI (tanpa library / CDN) — ganti fungsi barcode(v) lama dengan blok ini
+// BARCODE CODE128 MANDIRI (tanpa library / CDN)
 // =====================================================================
 const C128 = [
 '212222','222122','222221','121223','121322','131222','122213','122312','132212','221213',
@@ -1461,6 +1604,7 @@ function settingsHTML() {
     ${sec('file-text','Logo Laporan (Kop Surat)','Logo yang tampil di kop setiap PDF laporan &amp; barcode buku, disimpan di folder Drive terpisah dari logo kartu di atas (ASSETS_ELIBRARY/Logo Laporan, nama file LAPORAN_KIRI/LAPORAN_KANAN). Jika kedua kolom di bawah dikosongkan, sistem memakai logo kartu sebagai cadangan (kiri &amp; kanan). Jika Anda mengisi salah satu kolom saja, hanya logo itu yang tampil di laporan — sisi yang kosong TIDAK akan otomatis diisi logo kartu.',`<div class="grid grid-cols-2 gap-4">${imgField('reportLogoLeft','Logo Kiri (Laporan)')}${imgField('reportLogoRight','Logo Kanan (Laporan)')}</div>`)}
     ${sec('layout-panel-top','Margin Cetak PDF Laporan','Atur jarak margin atas, bawah, kiri, dan kanan (mm) saat mencetak PDF laporan (Keaktifan, Buku Tersedia/Dipinjam/Dikembalikan, Tunggakan Akhir).',`<div class="grid grid-cols-2 gap-4">${f('reportMarginTop','Margin Atas (mm)','number','','min="0" max="60" step="1"')}${f('reportMarginBottom','Margin Bawah (mm)','number','','min="0" max="60" step="1"')}${f('reportMarginLeft','Margin Kiri (mm)','number','','min="0" max="60" step="1"')}${f('reportMarginRight','Margin Kanan (mm)','number','','min="0" max="60" step="1"')}</div>`)}
     ${sec('credit-card','Pengaturan Cetak Kartu','Sesuaikan tampilan, warna, font, jarak elemen, dan isi tata tertib kartu anggota',`<div class="grid md:grid-cols-2 gap-6"><div class="space-y-4"><div><label class="lbl">Preset Ukuran</label><select id="set-preset" onchange="applyPreset()" class="inp"><option value="85.6x54">ID Card Landscape — 85,6 × 54 mm</option><option value="54x85.6">ID Card Portrait — 54 × 85,6 mm</option><option value="custom">Kustom</option></select></div><div class="grid grid-cols-2 gap-4">${f('cardWidth','Lebar (mm)','number','','min="30" max="210" step="0.1"')}${f('cardHeight','Tinggi (mm)','number','','min="30" max="210" step="0.1"')}</div><div>${f('cardRadius','Radius Sudut Kartu (mm)','number','','min="0" max="10" step="0.1"')}</div>${imgField('cardBgFront','Background Sisi Depan')}${imgField('cardBgBack','Background Sisi Belakang')}<div><label class="lbl">Opasitas Background: <span id="opacity-val">${DEF.cardBgOpacity}</span>%</label><input id="set-cardBgOpacity" type="range" min="0" max="100" oninput="$('opacity-val').innerText=this.value" class="w-full"/></div><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Warna Background Kop Kartu</label><input id="set-cardHeaderColor" type="color" class="inp !p-1 !h-12 cursor-pointer"/></div><div><label class="lbl">Font Kartu</label><select id="set-cardFont" class="inp">${FONT_OPTS.map(o => `<option value="${o[0]}">${o[1]}</option>`).join('')}</select></div></div><div><label class="lbl">Warna Garis Bawah Kartu (list warna)</label><input id="set-cardBottomColors" class="inp" placeholder="#064e3b,#10b981,#064e3b"/><p class="text-[9px] text-slate-400 font-bold mt-1">Pisahkan dengan koma (kode HEX). Minimal 2 warna untuk membuat gradasi.</p></div><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Jarak Titimangsa ↔ TTD (em)</label>${f('cardSpaceDateSign','','number','','min="0" max="5" step="0.05"')}</div><div><label class="lbl">Jarak TTD ↔ Quotes (em)</label>${f('cardSpaceSignQuote','','number','','min="0" max="5" step="0.05"')}</div></div><div><label class="lbl">Isi Tata Tertib (satu poin per baris)</label><textarea id="set-cardRules" rows="5" class="inp" placeholder="Tulis satu poin tata tertib per baris..."></textarea></div><div><label class="lbl">Quotes di Kartu (tampil di bawah ttd)</label><textarea id="set-cardQuote" rows="2" class="inp" placeholder="Contoh: Membaca adalah jendela dunia..."></textarea></div><div><label class="lbl">Sumber / Pembicara Quotes</label><input id="set-cardQuoteAuthor" class="inp" placeholder="Contoh: Anonim, Nabi Muhammad SAW, dll"/></div></div><div><label class="lbl">Pratinjau (data contoh)</label><div id="card-preview" class="mt-1 overflow-auto p-2 bg-slate-50 rounded-xl border flex flex-wrap justify-center gap-3"></div></div></div>`)}
+    ${sec('key-round','Keamanan Admin','Ganti password login admin. Setelah diganti, sesi admin di perangkat lain otomatis berakhir.',`<div class="grid md:grid-cols-3 gap-4"><div><label class="lbl">Password Lama</label><input id="pw-old" type="password" autocomplete="current-password" class="inp"/></div><div><label class="lbl">Password Baru (min. 6)</label><input id="pw-new" type="password" autocomplete="new-password" class="inp"/></div><div><label class="lbl">Ulangi Password Baru</label><input id="pw-new2" type="password" autocomplete="new-password" class="inp"/></div></div><button type="button" onclick="changePassword()" class="btn bg-slate-800 text-white mt-4">Ganti Password</button>`)}
     <button class="btn platinum-gradient w-full py-4 tracking-widest">SIMPAN PENGATURAN</button></form>`;
 }
 const SETTING_UPLOAD_TYPE = { logoLeft:'logo_left', logoRight:'logo_right', reportLogoLeft:'report_logo_left', reportLogoRight:'report_logo_right', cardBgFront:'card_bg_front', cardBgBack:'card_bg_back', pwaIcon:'pwa_icon' };
@@ -1525,7 +1669,7 @@ async function submitSettings(e) {
   if (res) await refresh(res.message); else showLoader(false);
 }
 
-window.addEventListener('load', () => { buildNav(); initPwa(); initApp(); });
+window.addEventListener('load', () => { initPwa(); boot(); });
 </script>
 </body>
 </html>
