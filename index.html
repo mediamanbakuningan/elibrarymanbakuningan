@@ -39,47 +39,80 @@
   .scroll-smooth { -webkit-overflow-scrolling:touch; scroll-behavior:smooth; }
   .hide-scroll::-webkit-scrollbar { display:none; }
 </style>
+<style>
+  /* ===== Landing page publik ===== */
+  .lribbon{position:absolute;left:16px;top:0;width:84px;height:136px;background:#0b1f19;clip-path:polygon(0 0,100% 0,100% 100%,50% 80%,0 100%);display:flex;align-items:flex-start;justify-content:center;padding-top:30px}
+  @media(min-width:768px){.lribbon{left:24px;width:105px;height:172px;padding-top:38px}}
+  .lmasuk{background:#047857;color:#fff;font-weight:600;font-size:16px;padding:11px 30px;border-radius:999px;border:0;cursor:pointer;box-shadow:0 6px 16px rgba(4,120,87,.3);transition:.2s}
+  .lmasuk:hover{background:#065f46}
+  .lbtn-dark{background:#0b1f19;color:#fff;font-weight:700;font-size:15px;padding:13px 30px;border-radius:999px;transition:.2s}
+  .lbtn-dark:hover{background:#047857}
+  .lbtn-light{background:#fff;color:#0b1f19;font-weight:700;font-size:15px;padding:13px 30px;border-radius:999px;border:1px solid #cbd5e1;transition:.2s}
+  .lbtn-light:hover{background:#f1f5f9}
+  .lhero{background:linear-gradient(180deg,#cfe3dc 0%,#e6eee6 50%,#f6efdc 100%)}
+  .lh1{font-size:clamp(2.3rem,6.4vw,5.4rem);font-weight:800;line-height:1.12;letter-spacing:-.02em;color:#10201b}
+  .lmarquee{overflow:hidden;padding:6px 0 0}
+  .ltrack{display:flex;width:max-content;animation:lmq linear infinite}
+  .lmarquee:hover .ltrack{animation-play-state:paused}
+  @keyframes lmq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  @media (prefers-reduced-motion:reduce){.ltrack{animation:none}}
+  .lcover{position:relative;flex:none;width:clamp(150px,18vw,300px);aspect-ratio:3/4;margin-right:36px;border-radius:14px;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:16px;text-align:center;color:#fff;font-weight:800;font-size:clamp(14px,1.6vw,22px);line-height:1.2;box-shadow:0 18px 30px -14px rgba(0,0,0,.45)}
+  .lcover img,.lc img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .lshelf-top{height:26px;margin:0 auto;width:calc(100% - 2*clamp(16px,5.6vw,108px));background:#d8d5cf;clip-path:polygon(3% 0,97% 0,100% 100%,0 100%)}
+  .lshelf-front{height:34px;margin:0 auto;width:calc(100% - 2*clamp(16px,5.6vw,108px));background:#f1eeea;box-shadow:0 14px 24px -10px rgba(0,0,0,.25)}
+  .lf{position:relative;border-bottom:1px solid #c9cfcc}
+  .lf select,.lf input{width:100%;background:transparent;border:0;outline:none;font-size:17px;color:#1f2937;padding:16px 38px 16px 0;-webkit-appearance:none;appearance:none;border-radius:0;cursor:pointer}
+  .lf input{cursor:text;padding-left:36px}
+  .lf:focus-within{border-bottom-color:#047857}
+  .lf-ic-r{position:absolute;right:2px;top:50%;transform:translateY(-50%);pointer-events:none;color:#374151}
+  .lf-ic-l{position:absolute;left:2px;top:50%;transform:translateY(-50%);pointer-events:none;color:#374151}
+  .lcard{background:#f5f5f3;border-radius:6px;cursor:pointer;display:flex;flex-direction:column;transition:transform .2s,box-shadow .2s}
+  .lcard:hover{transform:translateY(-4px);box-shadow:0 18px 30px -16px rgba(0,0,0,.25)}
+  .lbadge{display:inline-flex;align-items:center;gap:5px;background:#fbbf24;color:#422006;font-weight:800;font-size:12px;padding:5px 10px;border-radius:8px;letter-spacing:.02em;flex:none}
+  .lbadge.off{background:#e5e7eb;color:#6b7280}
+  .lcwrap{display:flex;align-items:center;justify-content:center;padding:30px 0 36px}
+  .lc{position:relative;width:76%;max-width:230px;aspect-ratio:3/4;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:10px;text-align:center;color:#fff;font-weight:800;font-size:14px;line-height:1.2;box-shadow:0 26px 28px -14px rgba(0,0,0,.4)}
+</style>
 </head>
 <body>
 <div id="e-library-app">
 
-  <!-- HALAMAN LOGIN -->
-  <div id="login-screen" class="fixed inset-0 z-[900] overflow-y-auto" style="background:linear-gradient(135deg,#022c22 0%,#047857 55%,#064e3b 100%)">
-    <div class="min-h-full flex items-center justify-center p-4">
-      <div class="w-full max-w-md">
-        <div class="text-center text-white mb-6">
-          <div class="w-20 h-20 mx-auto rounded-3xl bg-white/15 border border-white/30 flex items-center justify-center overflow-hidden mb-4">
-            <i id="login-logo-fallback" data-lucide="library" class="w-10 h-10"></i>
-            <img id="login-logo-img" src="" class="hide w-full h-full object-contain p-2"/>
-          </div>
-          <h1 id="login-title" class="text-3xl font-black tracking-tight">E-LIBRARY</h1>
-          <p id="login-school" class="text-emerald-100 text-xs font-bold uppercase tracking-widest mt-1">Perpustakaan Digital</p>
-        </div>
-
-        <div class="bg-white rounded-[2rem] shadow-2xl p-6 md:p-8 space-y-5">
-          <div>
-            <button type="button" onclick="loginVisitor()" class="w-full platinum-gradient py-4 rounded-2xl font-black text-sm tracking-widest shadow-lg flex items-center justify-center gap-2">
-              <i data-lucide="book-marked" class="w-5 h-5"></i> MASUK SEBAGAI PENGUNJUNG
-            </button>
-            <p class="text-[10px] text-slate-400 font-bold text-center mt-2">Nikmati ratusan E-Book Gratis selamanya</p>
-          </div>
-
-          <div class="flex items-center gap-3"><div class="flex-1 h-px bg-slate-200"></div><span class="text-[10px] font-black text-slate-400 tracking-widest">ATAU LOGIN ADMIN</span><div class="flex-1 h-px bg-slate-200"></div></div>
-
-          <form onsubmit="loginAdmin(event)" class="space-y-3">
-            <div>
-              <label class="lbl">Password Admin</label>
-              <div class="relative">
-                <input id="login-password" type="password" autocomplete="current-password" required placeholder="Masukkan password" class="inp !pr-16"/>
-                <button type="button" onclick="toggleLoginPw()" id="login-pw-toggle" class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-700 mt-0.5">LIHAT</button>
-              </div>
-            </div>
-            <p id="login-msg" class="hide text-xs font-bold text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2"></p>
-            <button id="btn-login-admin" class="btn bg-slate-800 text-white w-full py-3.5 tracking-widest">Masuk sebagai Admin</button>
-          </form>
-        </div>
-        <p class="text-center text-[9px] font-bold text-emerald-200 tracking-widest mt-5">@2026 made by Albustomipauzi</p>
+  <!-- HALAMAN AWAL (LANDING PAGE PUBLIK): selamat datang + e-book, tanpa login -->
+  <div id="landing-screen" class="fixed inset-0 z-[800] overflow-y-auto bg-white scroll-smooth">
+    <header class="absolute top-0 left-0 right-0 z-20">
+      <div class="lribbon" aria-hidden="true">
+        <i id="landing-logo-fallback" data-lucide="library" class="w-9 h-9 md:w-11 md:h-11 text-white"></i>
+        <img id="landing-logo-img" src="" alt="" class="hide w-10 h-10 md:w-12 md:h-12 object-contain"/>
       </div>
+      <nav class="max-w-[1680px] mx-auto px-4 md:px-12 h-24 flex items-center justify-between">
+        <span class="w-24"></span>
+        <div class="hidden md:flex items-center gap-4 text-[15px] tracking-wide text-slate-800 font-medium">
+          <button onclick="scrollToSection('landing-explore')" class="hover:text-emerald-700">EKSPLORASI</button><span>&bull;</span><button onclick="scrollToSection('landing-about')" class="hover:text-emerald-700">TENTANG</button>
+        </div>
+        <button onclick="openLogin()" class="lmasuk">Masuk</button>
+      </nav>
+    </header>
+    <div id="landing-root"><p class="text-center text-slate-400 font-bold py-40">Memuat perpustakaan...</p></div>
+  </div>
+
+  <!-- LOGIN ADMIN (muncul saat tombol Masuk di pojok kanan atas ditekan) -->
+  <div id="login-modal" class="fixed inset-0 z-[950] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hide" onclick="if(event.target===this)closeLogin()">
+    <div class="w-full max-w-sm bg-white rounded-[2rem] shadow-2xl p-6 md:p-8">
+      <div class="flex items-start justify-between mb-5">
+        <div><h3 class="text-xl font-black text-slate-800">Masuk Admin</h3><p class="text-xs text-slate-400 font-bold mt-1">Khusus pengelola perpustakaan.</p></div>
+        <button type="button" onclick="closeLogin()" title="Tutup" class="text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <form onsubmit="loginAdmin(event)" class="space-y-3">
+        <div>
+          <label class="lbl">Password Admin</label>
+          <div class="relative">
+            <input id="login-password" type="password" autocomplete="current-password" required placeholder="Masukkan password" class="inp !pr-16"/>
+            <button type="button" onclick="toggleLoginPw()" id="login-pw-toggle" class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-700 mt-0.5">LIHAT</button>
+          </div>
+        </div>
+        <p id="login-msg" class="hide text-xs font-bold text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2"></p>
+        <button id="btn-login-admin" class="btn platinum-gradient w-full py-3.5 tracking-widest">Masuk</button>
+      </form>
     </div>
   </div>
 
@@ -242,13 +275,14 @@ const mem = id => appState.members.find(m => m.ID === id) || {};
 const late = l => { const d = Math.floor((Date.now() - new Date(l.DueDate)) / 864e5); return d > 0 ? d : 0; };
 const getCategories = () => { const raw = (S().bookCategories || DEF.bookCategories); return raw.split(',').map(s => s.trim()).filter(Boolean); };
 
-// ---------- AUTENTIKASI ----------
+// ---------- AUTENTIKASI (admin saja) & HALAMAN AWAL PUBLIK ----------
 const AUTH_KEY = 'elib_auth';
 let auth = { role: null, token: '' };
+let landingFilter = { cat:'', author:'', sort:'new', q:'' }, landingLimit = 20, landingError = '';
 const isAdmin = () => auth.role === 'admin';
-const visibleTabs = () => isAdmin() ? TABS : TABS.filter(t => t[0] === 'ebooks');
+const visibleTabs = () => TABS;
 function loadAuth() {
-  try { const a = JSON.parse(localStorage.getItem(AUTH_KEY) || 'null'); if (a && (a.role === 'visitor' || (a.role === 'admin' && a.token))) auth = a; } catch (e) {}
+  try { const a = JSON.parse(localStorage.getItem(AUTH_KEY) || 'null'); if (a && a.role === 'admin' && a.token) auth = a; } catch (e) {}
 }
 function saveAuth() { try { localStorage.setItem(AUTH_KEY, JSON.stringify(auth)); } catch (e) {} }
 function setLoginMsg(t) { const m = $('login-msg'); if (!m) return; m.textContent = t || ''; m.classList.toggle('hide', !t); }
@@ -256,18 +290,13 @@ function toggleLoginPw() {
   const i = $('login-password'), show = i.type === 'password';
   i.type = show ? 'text' : 'password'; $('login-pw-toggle').textContent = show ? 'SEMBUNYIKAN' : 'LIHAT';
 }
-function applyLoginBranding() {
-  const s = S();
-  $('login-school').textContent = s.schoolName || 'Perpustakaan Digital';
-  $('login-title').textContent = s.pwaShortName || 'E-LIBRARY';
-  const img = $('login-logo-img'), fb = $('login-logo-fallback'), url = s.logoLeft || s.pwaIcon || '';
-  if (url) { img.src = url; img.classList.remove('hide'); if (fb) fb.classList.add('hide'); }
-  else { img.classList.add('hide'); if (fb) fb.classList.remove('hide'); }
-  applyPwaSettings();
+function openLogin() {
+  setLoginMsg('');
+  $('login-modal').classList.remove('hide');
+  try { lucide.createIcons(); } catch (e) {}
+  setTimeout(() => { const i = $('login-password'); if (i) i.focus(); }, 60);
 }
-async function loadLoginBranding() {
-  try { const res = await apiPost('get_branding'); appState.settings = (res.data && res.data.settings) || {}; if (!auth.role) applyLoginBranding(); } catch (e) {}
-}
+function closeLogin() { $('login-modal').classList.add('hide'); }
 async function loginAdmin(e) {
   e.preventDefault();
   const pw = $('login-password').value; if (!pw) return;
@@ -278,17 +307,13 @@ async function loginAdmin(e) {
     $('login-password').value = ''; appState.activeTab = 'dashboard';
     await enterApp();
   } catch (err) { setLoginMsg(err.message); }
-  finally { btn.disabled = false; btn.textContent = 'Masuk sebagai Admin'; }
-}
-async function loginVisitor() {
-  auth = { role: 'visitor', token: '' }; saveAuth();
-  appState.activeTab = 'ebooks';
-  await enterApp();
+  finally { btn.disabled = false; btn.textContent = 'Masuk'; }
 }
 async function enterApp() {
-  $('login-screen').classList.add('hide');
+  $('landing-screen').classList.add('hide');
+  closeLogin();
   $('app-shell').classList.remove('hide');
-  $('role-badge').textContent = isAdmin() ? 'ADMIN' : 'PENGUNJUNG';
+  $('role-badge').textContent = 'ADMIN';
   buildNav();
   await initApp();
 }
@@ -297,15 +322,14 @@ function doLogout(expired) {
   try { localStorage.removeItem(AUTH_KEY); } catch (e) {}
   Object.assign(appState, { books: [], members: [], loans: [], visits: [], ebooks: [], activeTab: 'dashboard', setupError: false });
   $('app-shell').classList.add('hide');
-  $('login-screen').classList.remove('hide');
   $('app-content').innerHTML = '';
-  setLoginMsg('');
-  applyLoginBranding();
-  try { lucide.createIcons(); } catch (e) {}
-  if (expired) setTimeout(() => setLoginMsg('Sesi admin berakhir. Silakan masuk kembali.'), 400);
+  $('landing-screen').classList.remove('hide');
+  $('landing-screen').scrollTo(0, 0);
+  loadLanding();
+  if (expired) setTimeout(() => showToast('Sesi admin berakhir. Silakan masuk kembali.', true), 400);
 }
 async function confirmLogout() {
-  const r = await Swal.fire({ title: 'Keluar?', text: 'Anda akan kembali ke halaman login.', icon: 'question', showCancelButton: true, confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b', confirmButtonText: 'Ya, Keluar', cancelButtonText: 'Batal' });
+  const r = await Swal.fire({ title: 'Keluar?', text: 'Anda akan kembali ke halaman awal.', icon: 'question', showCancelButton: true, confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b', confirmButtonText: 'Ya, Keluar', cancelButtonText: 'Batal' });
   if (!r.isConfirmed) return;
   if (isAdmin()) apiPost('logout').catch(() => {});
   doLogout(false);
@@ -313,8 +337,8 @@ async function confirmLogout() {
 async function boot() {
   loadAuth();
   try { lucide.createIcons(); } catch (e) {}
-  if (auth.role) { await enterApp(); }
-  else { loadLoginBranding(); }
+  if (auth.role) await enterApp();
+  else await loadLanding();
 }
 async function changePassword() {
   const o = $('pw-old').value, n = $('pw-new').value, n2 = $('pw-new2').value;
@@ -328,6 +352,127 @@ async function changePassword() {
     ['pw-old', 'pw-new', 'pw-new2'].forEach(i => $(i).value = '');
     showLoader(false); showToast(res.message);
   } catch (err) { showLoader(false); showToast(err.message, true); }
+}
+
+// ---------- LANDING PAGE PUBLIK (selamat datang + eksplorasi e-book) ----------
+const LGRAD = ['linear-gradient(160deg,#064e3b,#10b981)','linear-gradient(160deg,#7c2d12,#f59e0b)','linear-gradient(160deg,#1e3a8a,#60a5fa)','linear-gradient(160deg,#831843,#f472b6)','linear-gradient(160deg,#134e4a,#5eead4)','linear-gradient(160deg,#3f3f46,#a1a1aa)'];
+const lgrad = k => LGRAD[[...String(k || '')].reduce((a, c) => a + c.charCodeAt(0), 0) % LGRAD.length];
+function scrollToSection(id) {
+  const el = $(id), sc = $('landing-screen'); if (!el || !sc) return;
+  sc.scrollTo({ top: el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 10, behavior: 'smooth' });
+}
+async function loadLanding() {
+  landingError = '';
+  try {
+    const res = await apiPost('get_public_data');
+    appState.ebooks = (res.data && res.data.ebooks) || [];
+    appState.settings = (res.data && res.data.settings) || {};
+  } catch (e) { landingError = e.message || 'Gagal memuat data.'; }
+  if (auth.role) return;
+  applyLandingBranding();
+  renderLanding();
+  applyPwaSettings();
+}
+function applyLandingBranding() {
+  const s = S(), img = $('landing-logo-img'), fb = $('landing-logo-fallback'), url = s.logoLeft || s.pwaIcon || '';
+  if (!img || !fb) return;
+  if (url) { img.src = url; img.classList.remove('hide'); fb.classList.add('hide'); }
+  else { img.classList.add('hide'); fb.classList.remove('hide'); }
+}
+function heroCoverHTML(bk) {
+  return `<div class="lcover" style="background:${lgrad(bk.Code || bk.Title)}"><span>${esc(bk.Title)}</span>${bk.CoverUrl ? `<img src="${esc(bk.CoverUrl)}" alt="" loading="lazy" onerror="this.style.display='none'"/>` : ''}</div>`;
+}
+function landingSelect(key, label, opts, cur) {
+  return `<div class="lf"><select onchange="setLF('${key}',this.value)" aria-label="${label}"><option value="">${label}</option>${opts.map(o => `<option value="${esc(o[0])}" ${cur === o[0] ? 'selected' : ''}>${esc(o[1])}</option>`).join('')}</select><i data-lucide="plus" class="w-5 h-5 lf-ic-r"></i></div>`;
+}
+function renderLanding() {
+  const root = $('landing-root'); if (!root) return;
+  const s = S(), name = s.libraryName || s.schoolName || 'E-LIBRARY', school = s.schoolName || 'sekolah kami';
+  if (landingError) {
+    root.innerHTML = `<div class="py-40 px-6 text-center max-w-xl mx-auto"><i data-lucide="server-crash" class="w-14 h-14 text-red-500 mx-auto mb-5"></i><h2 class="text-2xl font-black text-slate-800">Tidak bisa memuat perpustakaan</h2><p class="text-sm text-slate-500 mt-3">${esc(landingError)}</p><button onclick="loadLanding()" class="btn bg-emerald-800 text-white mt-6">Muat Ulang</button></div>`;
+    try { lucide.createIcons(); } catch (e) {}
+    return;
+  }
+  const withCover = appState.ebooks.filter(b => b.CoverUrl), others = appState.ebooks.filter(b => !b.CoverUrl);
+  const items = [...withCover, ...others].slice(0, 14).map(b => ({ Title: b.Title, Code: b.Code, CoverUrl: b.CoverUrl }));
+  const fill = ['Perpustakaan Digital', 'Baca Kapan Saja', 'Ilmu Tanpa Batas', 'E-Book Sekolah', 'Jendela Dunia', 'Gemar Membaca'];
+  for (let i = 0; items.length < 6; i++) items.push({ Title: fill[i % fill.length], Code: fill[i % fill.length], CoverUrl: '' });
+  const track = items.map(heroCoverHTML).join('');
+
+  const catsAll = getCategories(), present = [...new Set(appState.ebooks.map(b => String(b.Category || '').trim()).filter(Boolean))];
+  const cats = [...catsAll.filter(c => present.includes(c)), ...present.filter(c => !catsAll.includes(c)).sort()];
+  const authors = [...new Set(appState.ebooks.map(b => String(b.Author || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'id'));
+  const f = landingFilter;
+
+  root.innerHTML = `
+    <section class="lhero text-center px-5 pt-36 md:pt-40">
+      <h1 class="lh1">Selamat Datang di<br>${esc(name)}</h1>
+      <p class="max-w-2xl mx-auto mt-6 md:mt-8 text-base md:text-2xl text-slate-600 leading-relaxed">Perpustakaan digital ${esc(school)}. Baca e-book koleksi kami kapan saja, langsung dari HP atau komputer.</p>
+      <div class="mt-8 flex justify-center gap-3 flex-wrap">
+        <button onclick="scrollToSection('landing-explore')" class="lbtn-dark">Mulai Membaca</button>
+        <button id="btn-install-landing" onclick="installApp()" class="lbtn-light ${window.deferredPrompt ? '' : 'hide'}">Install Aplikasi</button>
+      </div>
+      <div class="lmarquee mt-10 md:mt-14"><div class="ltrack" style="animation-duration:${items.length * 5}s">${track}${track}</div></div>
+      <div class="lshelf-top"></div><div class="lshelf-front"></div>
+      <div class="h-10"></div>
+    </section>
+
+    <section id="landing-explore" class="max-w-[1680px] mx-auto px-5 md:px-[5.6vw] pt-16 md:pt-24 pb-20">
+      <h2 class="text-5xl md:text-6xl text-slate-900" style="font-family:Georgia,'Times New Roman',serif">Eksplorasi</h2>
+      <p class="text-base md:text-xl text-slate-600 mt-5 max-w-5xl leading-relaxed">Di sini tersedia berbagai pilihan e-book yang dikelola perpustakaan ${esc(school)}. Temukan buku yang menarik untuk kamu baca, ya!</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-x-6 gap-y-2 mt-10">
+        ${landingSelect('cat', 'Kategori', cats.map(c => [c, c]), f.cat)}
+        ${landingSelect('author', 'Penulis', authors.map(a => [a, a]), f.author)}
+        ${landingSelect('sort', 'Urutan', [['new', 'Terbaru'], ['az', 'Judul A-Z'], ['za', 'Judul Z-A']], f.sort === 'new' ? '' : f.sort)}
+        <div class="lf"><i data-lucide="search" class="w-5 h-5 lf-ic-l"></i><input type="text" value="${esc(f.q)}" oninput="setLF('q',this.value)" placeholder="Cari buku, penulis, atau kategori..." aria-label="Cari"/></div>
+      </div>
+      <p id="landing-count" class="text-sm font-semibold text-slate-400 mt-6"></p>
+      <div id="landing-grid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6 mt-4"></div>
+      <div class="text-center mt-10"><button id="landing-more" onclick="landingLimit += 20; updateLandingGrid()" class="lbtn-dark hide">Tampilkan Lebih Banyak</button></div>
+    </section>
+
+    <footer id="landing-about" class="bg-[#0b1f19] text-emerald-100 px-6 md:px-[5.6vw] py-14">
+      <div class="max-w-[1680px] mx-auto grid md:grid-cols-2 gap-8 items-end">
+        <div><p class="text-2xl font-black text-white">${esc(s.schoolName || 'Perpustakaan Sekolah')}</p>${s.libraryName ? `<p class="font-bold mt-1">${esc(s.libraryName)}</p>` : ''}${s.address ? `<p class="text-sm mt-3 opacity-80">${esc(s.address)}</p>` : ''}${s.contact ? `<p class="text-sm opacity-80">${esc(s.contact)}</p>` : ''}</div>
+        <p class="md:text-right text-[11px] font-bold tracking-widest opacity-70">@2026 made by Albustomipauzi</p>
+      </div>
+    </footer>`;
+  updateLandingGrid();
+  try { lucide.createIcons(); } catch (e) {}
+}
+function landingFiltered() {
+  const f = landingFilter, q = f.q.trim().toLowerCase();
+  let L = appState.ebooks.filter(bk =>
+    (!f.cat || String(bk.Category || '').trim() === f.cat) &&
+    (!f.author || String(bk.Author || '').trim() === f.author) &&
+    (!q || [bk.Title, bk.Author, bk.Code, bk.Category].some(v => String(v || '').toLowerCase().includes(q))));
+  if (f.sort === 'az') L = [...L].sort((a, b) => String(a.Title).localeCompare(String(b.Title), 'id'));
+  else if (f.sort === 'za') L = [...L].sort((a, b) => String(b.Title).localeCompare(String(a.Title), 'id'));
+  else L = [...L].reverse(); // terbaru = yang paling akhir ditambahkan
+  return L;
+}
+function setLF(k, v) { landingFilter[k] = (k === 'sort' && !v) ? 'new' : v; landingLimit = 20; updateLandingGrid(); }
+function landingCardHTML(bk) {
+  const author = String(bk.Author || '').trim(), has = !!bk.PdfUrl;
+  return `<article onclick="openLandingEbook('${esc(bk.ID)}')" class="lcard">
+    <div class="flex items-center justify-between gap-2 px-5 pt-5"><span class="text-[14px] text-slate-700 truncate">${esc(bk.Category || 'Umum')}</span><span class="lbadge ${has ? '' : 'off'}"><i data-lucide="book-open" class="w-3.5 h-3.5"></i>${has ? 'E-BOOK' : 'SEGERA'}</span></div>
+    <div class="lcwrap"><div class="lc" style="background:${lgrad(bk.Code || bk.Title)}"><span>${esc(bk.Title)}</span>${bk.CoverUrl ? `<img src="${esc(bk.CoverUrl)}" alt="" loading="lazy" onerror="this.style.display='none'"/>` : ''}</div></div>
+    <div class="px-5 pb-6"><h3 class="text-lg md:text-xl font-medium text-slate-900 leading-snug line-clamp-3">${esc(bk.Title)}</h3>${author ? `<div class="flex items-center gap-2 mt-3"><span class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 inline-flex items-center justify-center text-xs font-black flex-none">${esc(author.charAt(0).toUpperCase())}</span><span class="text-slate-600 truncate">${esc(author)}</span></div>` : ''}</div>
+  </article>`;
+}
+function updateLandingGrid() {
+  const el = $('landing-grid'); if (!el) return;
+  const L = landingFiltered(), shown = L.slice(0, landingLimit);
+  $('landing-count').textContent = L.length + ' e-book';
+  el.innerHTML = shown.length ? shown.map(landingCardHTML).join('') : `<p class="col-span-full text-center py-16 text-slate-400 font-semibold">${appState.ebooks.length ? 'Tidak ada e-book yang cocok dengan pencarian.' : 'Belum ada e-book.'}</p>`;
+  $('landing-more').classList.toggle('hide', L.length <= landingLimit);
+  try { lucide.createIcons(); } catch (e) {}
+}
+function openLandingEbook(id) {
+  const bk = appState.ebooks.find(x => x.ID === id);
+  if (!bk) return;
+  if (!bk.PdfUrl) return showToast('PDF e-book ini belum tersedia.', true);
+  window.open(bk.PdfUrl, '_blank', 'noopener');
 }
 
 // ---------- UI helpers ----------
@@ -424,7 +569,7 @@ async function initApp() {
   try {
     showLoader(true, 'Menghubungkan Server...');
     $('current-date-disp').innerText = new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-    const res = await apiCall(isAdmin() ? 'get_all_data' : 'get_public_data');
+    const res = await apiCall('get_all_data');
     if (res && res.data) {
       appState.setupError = false;
       ['books','members','loans','visits','ebooks'].forEach(k => appState[k] = res.data[k] || []);
@@ -548,6 +693,7 @@ function initPwa() {
       window.deferredPrompt = e;
       $('btn-install').classList.remove('hide');
       const bm = $('btn-install-mobile'); if (bm) bm.classList.remove('hide');
+      const bl = $('btn-install-landing'); if (bl) bl.classList.remove('hide');
     });
   } catch (e) { console.warn('PWA init gagal', e); }
 }
@@ -558,6 +704,7 @@ function installApp() {
     window.deferredPrompt = null;
     $('btn-install').classList.add('hide');
     const bm = $('btn-install-mobile'); if (bm) bm.classList.add('hide');
+    const bl = $('btn-install-landing'); if (bl) bl.classList.add('hide');
   });
 }
 // Untuk pengguna yang sebelumnya sudah membuka/menginstall aplikasi versi lama (cache Service Worker
