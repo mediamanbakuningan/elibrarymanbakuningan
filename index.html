@@ -57,7 +57,7 @@
 </style>
 <style>
   /* ===== Landing page publik ===== */
-  .lribbon{position:absolute;left:16px;top:0;width:84px;height:136px;background:#0b1f19;clip-path:polygon(0 0,100% 0,100% 100%,50% 80%,0 100%);display:flex;align-items:flex-start;justify-content:center;padding-top:30px}
+  .lribbon{position:absolute;left:12px;top:0;width:56px;height:84px;background:#0b1f19;clip-path:polygon(0 0,100% 0,100% 100%,50% 82%,0 100%);display:flex;align-items:flex-start;justify-content:center;padding-top:14px}
   @media(min-width:768px){.lribbon{left:24px;width:105px;height:172px;padding-top:38px}}
   .lmasuk{background:#047857;color:#fff;font-weight:600;font-size:16px;padding:11px 30px;border-radius:999px;border:0;cursor:pointer;box-shadow:0 6px 16px rgba(4,120,87,.3);transition:.2s}
   .lmasuk:hover{background:#065f46}
@@ -97,8 +97,8 @@
   <div id="landing-screen" class="fixed inset-0 z-[800] overflow-y-auto bg-white scroll-smooth">
     <header class="absolute top-0 left-0 right-0 z-20">
       <div class="lribbon" aria-hidden="true">
-        <i id="landing-logo-fallback" data-lucide="library" class="w-9 h-9 md:w-11 md:h-11 text-white"></i>
-        <img id="landing-logo-img" src="" alt="" class="hide w-10 h-10 md:w-12 md:h-12 object-contain"/>
+        <i id="landing-logo-fallback" data-lucide="library" class="w-6 h-6 md:w-11 md:h-11 text-white"></i>
+        <img id="landing-logo-img" src="" alt="" class="hide w-8 h-8 md:w-12 md:h-12 object-contain"/>
       </div>
       <nav class="max-w-[1680px] mx-auto px-4 md:px-12 h-24 flex items-center justify-between">
         <span class="w-24"></span>
@@ -645,7 +645,7 @@ async function initApp(opts = {}) {
   const cached = opts.first ? lsGet(ADM_KEY) : null, quiet = !!opts.silent;
   if (cached) { applyAdminData(cached); appState.setupError = false; $('header-subtitle').innerText = S().schoolName || 'PERPUSTAKAAN SEKOLAH'; switchTab(appState.activeTab); applyPwaSettings(); setSync(true); }
   else if (quiet) setSync(true);
-  else showLoader(true, 'Menghubungkan Server...');
+  else showLoader(true, 'Loading...');
   let res = null;
   try { res = await apiCall('get_all_data'); } catch (e) {}
   if (!cached && !quiet) showLoader(false);
