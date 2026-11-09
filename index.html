@@ -188,6 +188,19 @@
     </main>
   </div>
 
+    <!-- PEMILIH MANUAL (sirkulasi) -->
+  <div id="modal-picker" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[900] flex items-center justify-center p-4 hide" onclick="if(event.target===this)closePicker()">
+    <div class="w-full max-w-lg bg-white rounded-[2rem] shadow-2xl flex flex-col" style="max-height:85vh">
+      <div class="p-5 flex items-center justify-between border-b border-slate-100">
+        <h3 id="picker-title" class="font-black text-lg text-emerald-800">Pilih</h3>
+        <button type="button" onclick="closePicker()" class="text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div class="p-4 pb-2">
+        <input id="picker-search" type="text" autocomplete="off" oninput="_pk()" placeholder="Cari nama, kelas, NISN, judul, atau barcode..." class="inp"/>
+      </div>
+      <div id="picker-list" class="p-4 pt-2 overflow-y-auto space-y-2 flex-1"></div>
+    </div>
+  </div>
   <!-- MODAL BUKU -->
   <div id="modal-book" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[400] flex items-center justify-center p-4 hide">
     <div class="glass-panel w-full max-w-lg rounded-[2rem] p-5 md:p-10 shadow-2xl max-h-full overflow-y-auto">
@@ -1379,7 +1392,7 @@ async function handleBulkCoverUpload(e) {
 function circHTML() {
   const tb = (m,l) => `<button onclick="setScanMode('${m}')" class="flex-1 py-3 rounded-2xl font-black text-[10px] md:text-sm tracking-widest transition ${scanMode===m?'platinum-gradient shadow-md':'text-slate-400 hover:bg-slate-50'}">${l}</button>`;
   const v = scanMode === 'visit', ttl = { loan:'Peminjaman', return:'Pengembalian', visit:'Kunjungan Perpus' }[scanMode];
-  const inp = (id,l,ph,hide) => `<div class="flex items-end gap-2 ${hide?'hide':''}"><div class="flex-1 min-w-0"><label class="lbl ml-2">${l}</label><input id="${id}" ${hide?'':'required'} class="inp text-center font-mono text-base md:text-lg" placeholder="${ph}" autocomplete="off"/></div><button type="button" onclick="openScanner('${id}')" class="p-3 bg-slate-800 text-white rounded-xl hover:bg-slate-700 shadow-lg flex-none"><i data-lucide="camera" class="w-6 h-6"></i></button></div>`;
+    const inp = (id,l,ph,hide) => `<div class="flex items-end gap-2 ${hide?'hide':''}"><div class="flex-1 min-w-0"><label class="lbl ml-2">${l}</label><input id="${id}" ${hide?'':'required'} class="inp text-center font-mono text-base md:text-lg" placeholder="${ph}" autocomplete="off"/></div><button type="button" onclick="openPicker('${id}','${id==='circ-book'?'book':'member'}')" title="Pilih manual" class="p-3 bg-emerald-700 text-white rounded-xl hover:bg-emerald-600 shadow-lg flex-none"><i data-lucide="list-search" class="w-6 h-6"></i></button><button type="button" onclick="openScanner('${id}')" title="Scan kamera" class="p-3 bg-slate-800 text-white rounded-xl hover:bg-slate-700 shadow-lg flex-none"><i data-lucide="camera" class="w-6 h-6"></i></button></div>`;
   return `<div class="max-w-xl mx-auto space-y-6 pt-2"><div class="flex bg-white p-1.5 rounded-3xl border border-slate-100 shadow-sm">${tb('loan','SCAN PINJAM')}${tb('return','SCAN KEMBALI')}${tb('visit','SCAN MASUK')}</div>
     <form onsubmit="submitCirc(event)" class="card !p-6 md:!p-10 shadow-xl space-y-5"><div class="text-center mb-4"><div class="w-16 h-16 mx-auto bg-slate-50 rounded-3xl flex items-center justify-center mb-3 text-emerald-700 border"><i data-lucide="${v?'door-open':'scan-line'}" class="w-8 h-8"></i></div><h3 class="font-black text-xl text-slate-800 uppercase">Mode ${ttl}</h3></div>
     ${inp('circ-book','ID / Barcode BUKU','Scan Buku...',v)}${inp('circ-member','ID / Barcode ANGGOTA','Scan Kartu Siswa...',false)}
@@ -1431,7 +1444,65 @@ async function submitCirc(e) {
   initApp({ silent:true }); // data disegarkan di latar belakang: notifikasi & scan berikutnya tidak menunggu
   circNotify(true, mode, res.message || 'Transaksi berhasil.', info, res.fine);
 }
+// ---------- Pemilih manual (alternatif scan) ----------
+let pickKind = '', pickTarget = '';
+const _pk = debounce(() => renderPicker(), 150);
+const activeLoan = bookId => appState.loans.find(l => String(l.BookID) === String(bookId) && l.Status === 'borrowed');
 
+function openPicker(target, kind) {
+  pickTarget = target; pickKind = kind;
+  $('picker-title').textContent = kind === 'member' ? 'Pilih Anggota' : (scanMode === 'return' ? 'Pilih Buku yang Sedang Dipinjam' : 'Pilih Buku Tersedia');
+  $('picker-search').value = '';
+  renderPicker();
+  toggleModal('modal-picker', true);
+  try { lucide.createIcons(); } catch (e) {}
+  setTimeout(() => $('picker-search').focus(), 60);
+}
+function closePicker() { toggleModal('modal-picker', false); }
+
+function renderPicker() {
+  const el = $('picker-list'); if (!el) return;
+  const q = $('picker-search').value.trim().toLowerCase();
+  let items;
+  if (pickKind === 'member') {
+    items = appState.members
+      .filter(m => !q || [m.Name, m.Class, m.MemberID].some(v => String(v || '').toLowerCase().includes(q)))
+      .map(m => ({ id: m.ID, main: m.Name, sub: (m.Class || '-') + ' • ' + m.MemberID }));
+  } else {
+    const want = scanMode === 'return' ? 'borrowed' : 'available';
+    items = appState.books
+      .filter(b => b.Status === want && (!q || [b.Title, b.Author, b.ISBN, b.Category].some(v => String(v || '').toLowerCase().includes(q))))
+      .map(b => {
+        let sub = b.ISBN + (b.Author ? ' • ' + b.Author : '');
+        if (want === 'borrowed') { const l = activeLoan(b.ID); if (l) sub += ' • Peminjam: ' + l.MemberName; }
+        return { id: b.ID, main: b.Title, sub };
+      });
+  }
+  const total = items.length;
+  items = items.slice(0, 50);
+  el.innerHTML = items.length
+    ? items.map(it => `<button type="button" onclick="pickItem('${esc(it.id)}')" class="w-full text-left p-3 rounded-2xl border border-slate-100 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-500 transition"><p class="font-black text-slate-800 text-sm truncate">${esc(it.main)}</p><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider truncate">${esc(it.sub)}</p></button>`).join('')
+      + (total > items.length ? `<p class="text-center text-[11px] font-bold text-slate-400 py-2">Menampilkan 50 dari ${total}. Persempit pencarian.</p>` : '')
+    : empty(pickKind === 'book' ? (scanMode === 'return' ? 'Tidak ada buku yang sedang dipinjam / tidak cocok.' : 'Tidak ada buku tersedia / tidak cocok.') : 'Anggota tidak ditemukan.');
+}
+
+function pickItem(id) {
+  const target = $(pickTarget);
+  if (pickKind === 'member') {
+    const m = mem(id);
+    if (target && m.MemberID) target.value = m.MemberID;
+  } else {
+    const b = appState.books.find(x => x.ID === id);
+    if (b && target) target.value = b.ISBN;
+    if (b && scanMode === 'return') { // otomatis isi peminjam dari data pinjaman aktif
+      const l = activeLoan(b.ID), m = l ? mem(l.MemberID) : null, mi = $('circ-member');
+      if (m && m.MemberID && mi) mi.value = m.MemberID;
+    }
+  }
+  closePicker();
+  const next = (pickKind === 'book' && $('circ-member') && !$('circ-member').value) ? $('circ-member') : null;
+  if (next) next.focus();
+}
 // ---------- Scanner ----------
 async function ensureCamera() {
   if (!window.isSecureContext) { const e = new Error('insecure'); e.name = 'InsecureContext'; throw e; }
