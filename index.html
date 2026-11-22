@@ -259,6 +259,7 @@ html body,body button,body input,body select,body textarea,.swal2-popup,.swal2-c
       <nav id="sidebar-nav" class="flex-1 space-y-2 overflow-y-auto"></nav>
       <div class="mt-auto p-4 bg-white/40 rounded-2xl flex items-center gap-2 border border-white/50">
         <button id="btn-install" class="hide flex-1 platinum-gradient px-4 py-2.5 rounded-xl font-black text-xs shadow-lg flex items-center justify-center gap-2" onclick="installApp()"><i data-lucide="download" class="w-4 h-4"></i> <span class="nv-t">Install</span></button>
+        <button onclick="confirmLogout()" title="Keluar" aria-label="Keluar" class="flex-none bg-red-50 text-red-600 px-3 py-2.5 rounded-xl font-black text-xs flex items-center justify-center hover:bg-red-100 transition"><i data-lucide="log-out" class="w-4 h-4"></i></button>
         <button onclick="forceUpdateApp()" title="Bersihkan cache & terapkan ulang nama/tema/icon PWA terbaru di perangkat ini" class="flex-1 bg-slate-700 text-white px-4 py-2.5 rounded-xl font-black text-xs shadow-lg flex items-center justify-center gap-2 hover:bg-slate-600 transition"><i data-lucide="refresh-cw" class="w-4 h-4"></i> <span class="nv-t">Refresh</span></button>
       </div>
     </aside>
@@ -279,11 +280,7 @@ html body,body button,body input,body select,body textarea,.swal2-popup,.swal2-c
           <p id="header-subtitle" class="text-emerald-700 text-xs md:text-sm font-bold tracking-widest uppercase mb-1">MEMUAT...</p>
           <h2 id="header-title" class="text-2xl md:text-4xl lg:text-5xl font-black text-3d-elegant uppercase leading-tight py-1">Memuat Sistem</h2>
         </div>
-        <div class="flex items-center gap-3 flex-wrap">
-          <div class="hidden md:block"><div class="bg-emerald-50 text-emerald-800 px-5 py-3 rounded-xl font-bold text-sm flex items-center gap-2 border border-emerald-200"><i class="w-5 h-5" data-lucide="calendar-days"></i> <span id="current-date-disp"></span></div></div>
-          <span id="role-badge" class="text-[10px] font-black tracking-widest bg-slate-800 text-white px-3 py-2 rounded-xl"></span>
-          <button onclick="confirmLogout()" class="btn !shadow-none bg-red-600 text-white !py-2.5 flex items-center gap-2"><i data-lucide="log-out" class="w-4 h-4"></i> <span class="lo-t">Keluar</span></button>
-        </div>
+        <span id="role-badge" class="hide"></span><span id="current-date-disp" class="hide"></span>
       </header>
       <div id="app-content" class="w-full"></div>
     </main>
@@ -1048,10 +1045,6 @@ function dashHTML() {
   const cnt = {}; l.forEach(x => { if (x.BookTitle) cnt[x.BookTitle] = (cnt[x.BookTitle] || 0) + 1; });
   const top = Object.entries(cnt).sort((a,b) => b[1] - a[1]).slice(0,10), mx = top.length ? top[0][1] : 1;
   return `
-    <div class="card flex flex-col md:flex-row items-center justify-between border-l-8 border-l-emerald-600 gap-4 mb-6 !p-5 md:!p-6">
-      <div><h3 class="font-black text-slate-800 text-lg md:text-xl">Dashboard Aktif</h3><p class="text-slate-500 text-xs md:text-sm mt-1">Memonitor ${borrowed} buku beredar, ${overdue} terlambat, dan ${vt} pengunjung hari ini.</p></div>
-      <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto"><button onclick="quickVisitScan()" class="btn platinum-gradient flex items-center justify-center gap-2"><i data-lucide="door-open" class="w-4 h-4"></i> Scan Masuk Pengunjung</button><button onclick="switchTab('reports')" class="btn bg-slate-800 text-white">Buka Laporan</button></div>
-    </div>
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 mb-6">
       ${cards.map(c => `<div class="bg-white p-3 md:p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-2 md:gap-3 hover:border-${c[3]}-500 transition"><div class="bg-${c[3]}-50 text-${c[3]}-600 p-2.5 md:p-3 rounded-xl flex-none"><i data-lucide="${c[0]}" class="w-5 h-5"></i></div><div class="min-w-0"><p class="text-[9px] font-black text-slate-400 uppercase tracking-widest truncate">${c[1]}</p><p class="text-base md:text-xl font-black text-${c[3]}-600 truncate">${c[2]}</p></div></div>`).join('')}
     </div>
