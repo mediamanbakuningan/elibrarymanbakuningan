@@ -89,6 +89,79 @@
   .lcwrap{display:flex;align-items:center;justify-content:center;padding:30px 0 36px}
   .lc{position:relative;width:76%;max-width:230px;aspect-ratio:3/4;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:10px;text-align:center;color:#fff;font-weight:800;font-size:14px;line-height:1.2;box-shadow:0 26px 28px -14px rgba(0,0,0,.4)}
 </style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<style id="et-theme">
+/* ===== TEMA ADMIN ala EduTrack (hanya area admin & modalnya; landing page publik tidak berubah) ===== */
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker){--pr:#1e56e0;--pr2:#1742b8;--bg:#f3f7ff;--tx:#0f1c3f;--mu:#5b6b8c;--bd:#d5e1f6;--ok:#12a36b;--wa:#d9730d;--er:#e5365f;--grad:linear-gradient(135deg,#2f6bff 0%,#1e56e0 55%,#163a9c 100%);--shadow:0 12px 32px -16px rgba(22,58,156,.30);font-family:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif}
+#app-shell{background:linear-gradient(135deg,#eaf2ff 0%,#f5f9ff 48%,#e3ecfc 100%);color:var(--tx)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .card{background:#fff;border:1px solid var(--bd);border-radius:22px;box-shadow:var(--shadow)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .glass-panel{background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none;border:1px solid var(--bd);box-shadow:var(--shadow)}
+/* sidebar melayang, bulat, putih */
+#app-shell aside.glass-panel{border:0;border-radius:26px}
+#app-shell #sidebar-app-icon-box{background:var(--grad);border-radius:16px;box-shadow:0 10px 20px -10px rgba(30,86,224,.75)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .metallic-text{background:none;-webkit-text-fill-color:var(--tx);color:var(--tx)}
+#sidebar-nav button{border-radius:14px;font-weight:600;font-size:.92rem;color:#55658a}
+#sidebar-nav button:hover{background:#f3f7ff;color:var(--pr)}
+#sidebar-nav .platinum-gradient{background:#e3ecff;color:var(--pr);box-shadow:none;font-weight:700}
+#app-shell aside .bg-white\/40{background:var(--bg);border-color:var(--bd)}
+#app-shell aside .bg-slate-700{background:#e8f0ff;color:var(--pr);box-shadow:none}
+#app-shell aside .hover\:bg-slate-600:hover{background:#dbe7ff}
+/* header = banner biru bergradasi */
+#app-shell .header-box{background:var(--grad);border:0;border-radius:24px;box-shadow:0 18px 36px -18px rgba(22,58,156,.6);padding:1.25rem 1.6rem}
+#app-shell #header-subtitle{color:rgba(255,255,255,.82);letter-spacing:.12em}
+#app-shell #header-title{background:none;-webkit-background-clip:initial;background-clip:initial;-webkit-text-fill-color:#fff;color:#fff;filter:none;text-transform:none;font-weight:700;letter-spacing:-.01em;font-size:clamp(1.35rem,2.4vw,1.8rem);line-height:1.2;padding:0}
+#app-shell .header-box .bg-emerald-50{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.35)}
+#app-shell .header-box .text-emerald-800{color:#fff}
+#app-shell .header-box #role-badge{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.42)}
+#app-shell .header-box .bg-red-600{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.42);color:#fff}
+#app-shell .header-box .bg-red-600:hover{background:rgba(255,255,255,.3)}
+/* tombol & input */
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .btn{border-radius:12px;font-weight:600}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .platinum-gradient{background:var(--grad);background-size:auto;color:#fff;box-shadow:0 10px 20px -10px rgba(30,86,224,.75)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .platinum-gradient:hover{filter:brightness(1.07)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .inp{background:var(--bg);border:1px solid var(--bd);border-radius:12px;font-weight:600;color:var(--tx)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .inp:focus{border-color:var(--pr);box-shadow:0 0 0 3px rgba(30,86,224,.18)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .lbl{color:var(--mu);font-weight:700}
+/* palet: hijau zamrud/teal -> biru EduTrack */
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .text-emerald-600,:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .text-emerald-700{color:var(--pr)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .text-emerald-800{color:var(--pr2)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .text-emerald-100{color:#dbe7ff}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .bg-emerald-50{background:#e8f0ff}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .bg-emerald-100{background:#dbe7ff}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .bg-emerald-600,:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .bg-emerald-700{background:var(--pr)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .bg-emerald-800{background:var(--pr2)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .border-emerald-200{border-color:#bcd1f7}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .border-l-emerald-600{border-left-color:var(--pr)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .hover\:bg-emerald-50:hover{background:#e8f0ff}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .hover\:bg-emerald-600:hover{background:var(--pr)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .hover\:bg-emerald-800:hover{background:var(--pr2)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .hover\:text-emerald-800:hover{color:var(--pr2)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .hover\:border-emerald-500:hover{border-color:var(--pr)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .text-teal-600{color:#0284c7}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .bg-teal-50{background:#e0f2fe}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .bg-teal-700{background:#0369a1}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .hover\:border-teal-500:hover{border-color:#0ea5e9}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .text-green-600,:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .text-green-700{color:var(--ok)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .bg-green-50{background:#e4f8ee}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .bg-green-100{background:#d4f3e4}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .text-orange-600{color:var(--wa)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .bg-orange-50{background:#fff1e3}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .text-red-600,:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .text-red-700{color:var(--er)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .bg-red-50{background:#ffe9f0}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .text-slate-800{color:var(--tx)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .text-slate-500{color:var(--mu)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .border-slate-100{border-color:var(--bd)}
+/* kartu statistik */
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .bg-white.rounded-2xl.border{border-color:var(--bd);border-radius:18px;transition:transform .25s,box-shadow .25s}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .bg-white.rounded-2xl.border:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+/* mobile: navigasi bawah melayang */
+@media (max-width:1023px){
+  #app-shell{padding-bottom:96px}
+  #app-shell > nav.fixed{left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));border-radius:24px;border:1px solid var(--bd);background:#fff;box-shadow:0 14px 34px -14px rgba(22,58,156,.45);padding-bottom:.25rem!important}
+  #app-shell .header-box{padding:1rem 1.1rem}
+}
+</style>
 </head>
 <body>
 <div id="e-library-app">
@@ -374,7 +447,7 @@ async function loginAdmin(e) {
     auth = { role: 'admin', token: res.token }; saveAuth();
     $('login-password').value = ''; appState.activeTab = 'dashboard';
     await enterApp();
-    if (res.defaultPassword) Swal.fire({ icon:'warning', title:'Segera Ganti Password', html:'Anda masih memakai password bawaan (<b>admin123</b>) yang mudah ditebak.<br>Buka <b>Pengaturan &rarr; Keamanan Admin</b> lalu ganti sekarang.', confirmButtonText:'Mengerti', confirmButtonColor:'#059669' });
+    if (res.defaultPassword) Swal.fire({ icon:'warning', title:'Segera Ganti Password', html:'Anda masih memakai password bawaan (<b>admin123</b>) yang mudah ditebak.<br>Buka <b>Pengaturan &rarr; Keamanan Admin</b> lalu ganti sekarang.', confirmButtonText:'Mengerti', confirmButtonColor:'#1e56e0' });
   } catch (err) { setLoginMsg(err.message); }
   finally { btn.disabled = false; btn.textContent = 'Masuk'; }
 }
@@ -929,7 +1002,7 @@ function dashHTML() {
 }
 function quickVisitScan() { scanMode = 'visit'; switchTab('circulation'); }
 async function payFine(loanId) {
-  const r = await Swal.fire({ title:'Tandai Lunas?', text:'Denda akan ditandai sudah dibayar.', icon:'question', showCancelButton:true, confirmButtonColor:'#059669', cancelButtonColor:'#64748b', confirmButtonText:'Ya, Lunas', cancelButtonText:'Batal' });
+  const r = await Swal.fire({ title:'Tandai Lunas?', text:'Denda akan ditandai sudah dibayar.', icon:'question', showCancelButton:true, confirmButtonColor:'#1e56e0', cancelButtonColor:'#64748b', confirmButtonText:'Ya, Lunas', cancelButtonText:'Batal' });
   if (!r.isConfirmed) return;
   showLoader(true);
   const res = await apiCall('pay_fine', { loanId });
@@ -1359,7 +1432,7 @@ async function handleBulkCoverUpload(e) {
   const byCode = {};
   appState.ebooks.forEach(bk => { byCode[normPhotoKey(bk.Code)] = bk; });
 
-  const r = await Swal.fire({ icon:'question', title:'Upload Cover Massal', html:`Ditemukan <b>${files.length}</b> file gambar.<br>Sistem akan mencocokkan tiap nama file ke <b>Kode E-Book</b> (contoh: EB-001.jpg), lalu mengunggahnya satu per satu.<br><br>Lanjutkan?`, showCancelButton:true, confirmButtonColor:'#0f766e', cancelButtonColor:'#64748b', confirmButtonText:'Ya, Proses', cancelButtonText:'Batal' });
+  const r = await Swal.fire({ icon:'question', title:'Upload Cover Massal', html:`Ditemukan <b>${files.length}</b> file gambar.<br>Sistem akan mencocokkan tiap nama file ke <b>Kode E-Book</b> (contoh: EB-001.jpg), lalu mengunggahnya satu per satu.<br><br>Lanjutkan?`, showCancelButton:true, confirmButtonColor:'#1e56e0', cancelButtonColor:'#64748b', confirmButtonText:'Ya, Proses', cancelButtonText:'Batal' });
   if (!r.isConfirmed) return;
 
   let ok = 0, unmatched = 0, failed = 0;
