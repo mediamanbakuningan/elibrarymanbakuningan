@@ -94,14 +94,14 @@
 <style id="et-theme">
 /* ===== TEMA ala EduTrack (warna tetap HIJAU) ===== */
 html body,body button,body input,body select,body textarea,.swal2-popup,.swal2-container{font-family:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif}
-:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker){--pr:#047857;--pr2:#065f46;--bg:#f1f8f5;--tx:#0f2a22;--mu:#5b7468;--bd:#d3e7dd;--er:#dc2626;--erb:#fef2f2;--sbon:#dff3ea;--grad:linear-gradient(135deg,#10b981 0%,#047857 55%,#064e3b 100%);--shadow:0 12px 32px -16px rgba(4,95,70,.30)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker,#modal-stat){--pr:#047857;--pr2:#065f46;--bg:#f1f8f5;--tx:#0f2a22;--mu:#5b7468;--bd:#d3e7dd;--er:#dc2626;--erb:#fef2f2;--sbon:#dff3ea;--grad:linear-gradient(135deg,#10b981 0%,#047857 55%,#064e3b 100%);--shadow:0 12px 32px -16px rgba(4,95,70,.30)}
 #app-shell{background:linear-gradient(135deg,#e6f4ee 0%,#f5fbf8 48%,#dff0e8 100%);color:var(--tx)}
-:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .card{background:#fff;border:1px solid var(--bd);border-radius:22px;box-shadow:var(--shadow)}
-:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .glass-panel{background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none;border:1px solid var(--bd);box-shadow:var(--shadow)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker,#modal-stat) .card{background:#fff;border:1px solid var(--bd);border-radius:22px;box-shadow:var(--shadow)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker,#modal-stat) .glass-panel{background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none;border:1px solid var(--bd);box-shadow:var(--shadow)}
 /* ---- sidebar melayang + bisa diperkecil ---- */
 #app-shell aside.glass-panel{border:0;border-radius:26px;width:18rem;transition:width .28s cubic-bezier(.16,1,.3,1)}
 #app-shell #sidebar-app-icon-box{background:var(--grad);border-radius:16px;box-shadow:0 10px 20px -10px rgba(4,120,87,.7)}
-:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .metallic-text{background:none;-webkit-text-fill-color:var(--tx);color:var(--tx)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker,#modal-stat) .metallic-text{background:none;-webkit-text-fill-color:var(--tx);color:var(--tx)}
 #sb-tg{flex:none;margin-left:auto;width:32px;height:32px;border:0;border-radius:10px;background:var(--sbon);color:var(--pr);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:filter .2s,transform .15s}
 #sb-tg svg{width:16px;height:16px;transition:transform .28s cubic-bezier(.16,1,.3,1)}
 #sb-tg:hover{filter:brightness(.95)}#sb-tg:active{transform:scale(.92)}
@@ -131,17 +131,17 @@ html body,body button,body input,body select,body textarea,.swal2-popup,.swal2-c
 #app-shell .header-box .bg-red-600{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.42);color:#fff}
 #app-shell .header-box .bg-red-600:hover{background:rgba(255,255,255,.3)}
 /* ---- komponen ---- */
-:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .btn{border-radius:12px;font-weight:600}
-:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .platinum-gradient{background:var(--grad);background-size:auto;color:#fff;box-shadow:0 10px 20px -10px rgba(4,120,87,.75)}
-:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .platinum-gradient:hover{filter:brightness(1.07)}
-:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .inp{background:var(--bg);border:1px solid var(--bd);border-radius:12px;font-weight:600;color:var(--tx)}
-:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .inp:focus{border-color:var(--pr);box-shadow:0 0 0 3px rgba(4,120,87,.18)}
-:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .lbl{color:var(--mu);font-weight:700}
-:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .text-slate-800{color:var(--tx)}
-:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .text-slate-500{color:var(--mu)}
-:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .border-slate-100{border-color:var(--bd)}
-:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .bg-white.rounded-2xl.border{border-color:var(--bd);border-radius:18px;transition:transform .25s,box-shadow .25s}
-:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker) .bg-white.rounded-2xl.border:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker,#modal-stat) .btn{border-radius:12px;font-weight:600}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker,#modal-stat) .platinum-gradient{background:var(--grad);background-size:auto;color:#fff;box-shadow:0 10px 20px -10px rgba(4,120,87,.75)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker,#modal-stat) .platinum-gradient:hover{filter:brightness(1.07)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker,#modal-stat) .inp{background:var(--bg);border:1px solid var(--bd);border-radius:12px;font-weight:600;color:var(--tx)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker,#modal-stat) .inp:focus{border-color:var(--pr);box-shadow:0 0 0 3px rgba(4,120,87,.18)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker,#modal-stat) .lbl{color:var(--mu);font-weight:700}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker,#modal-stat) .text-slate-800{color:var(--tx)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker,#modal-stat) .text-slate-500{color:var(--mu)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker,#modal-stat) .border-slate-100{border-color:var(--bd)}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker,#modal-stat) .bg-white.rounded-2xl.border{border-color:var(--bd);border-radius:18px;transition:transform .25s,box-shadow .25s}
+:is(#app-shell,#modal-book,#modal-member,#modal-ebook,#modal-picker,#modal-stat) .bg-white.rounded-2xl.border:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
 /* ---- tombol mengambang lama disembunyikan (diganti navigasi bawah) ---- */
 #btn-install-mobile,#btn-refresh-mobile{display:none!important}
 #mbn,#mbn-sheet,#mbn-scrim{display:none}
@@ -297,6 +297,17 @@ html body,body button,body input,body select,body textarea,.swal2-popup,.swal2-c
         <input id="picker-search" type="text" autocomplete="off" oninput="_pk()" placeholder="Cari nama, kelas, NISN, judul, atau barcode..." class="inp"/>
       </div>
       <div id="picker-list" class="p-4 pt-2 overflow-y-auto space-y-2 flex-1"></div>
+    </div>
+  </div>
+  <!-- MODAL DETAIL KARTU DASHBOARD -->
+  <div id="modal-stat" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[900] flex items-center justify-center p-4 hide" onclick="if(event.target===this)closeStat()">
+    <div class="w-full max-w-2xl bg-white rounded-[2rem] shadow-2xl flex flex-col" style="max-height:88vh">
+      <div class="p-5 flex items-start justify-between gap-3 border-b border-slate-100">
+        <div class="min-w-0"><h3 id="stat-title" class="font-black text-lg text-emerald-800 truncate">-</h3><p id="stat-sum" class="text-xs font-bold text-slate-400 mt-0.5"></p></div>
+        <button type="button" onclick="closeStat()" class="text-slate-400 hover:text-slate-700" aria-label="Tutup"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div class="p-4 pb-2"><input id="stat-q" type="text" autocomplete="off" oninput="renderStat()" placeholder="Cari di daftar ini..." class="inp"/></div>
+      <div id="stat-list" class="p-4 pt-2 overflow-y-auto space-y-2 flex-1"></div>
     </div>
   </div>
   <!-- MODAL BUKU -->
@@ -938,6 +949,48 @@ async function forceUpdateApp() {
   location.href = location.pathname + '?_upd=' + Date.now();
 }
 
+
+// ---------- Detail kartu dashboard ----------
+let _stat = null;
+function statCfg(k) {
+  const A = appState, b = A.books, l = A.loans, td = today();
+  const who = x => { const m = mem(x.MemberID); return (x.MemberName || m.Name || '-') + (m.Class ? ' (' + m.Class + ')' : ''); };
+  const bookRow = x => ({ m:x.Title, s:[x.Author, x.Category, x.ISBN].filter(Boolean).join(' • '), g:x.Status === 'borrowed' ? 'Dipinjam' : 'Tersedia', tone:x.Status === 'borrowed' ? 'warn' : 'ok' });
+  const loanRow = x => { const lt = late(x); return { m:x.BookTitle, s:who(x) + ' • Jatuh tempo ' + fmtDate(x.DueDate), g:lt > 0 ? 'Terlambat ' + lt + ' hari' : 'Aktif', tone:lt > 0 ? 'bad' : 'ok' }; };
+  const byDate = (arr, f) => arr.slice().sort((a, c) => String(c[f] || '').localeCompare(String(a[f] || '')));
+  const visitRow = v => { const m = mem(v.MemberID), t = String(v.VisitDate || ''); return { m:m.Name || v.MemberName || '-', s:(m.Class || '-') + ' • ' + fmtDate(t) + (t.length > 10 ? ' ' + t.slice(11,16) : ''), g:'', tone:'n' }; };
+  switch (k) {
+    case 'books': return { t:'Total Buku', sum:b.length + ' judul/eksemplar', rows:b.map(bookRow) };
+    case 'ebooks': return { t:'Total E-Book', sum:A.ebooks.length + ' e-book', rows:A.ebooks.map(x => ({ m:x.Title, s:[x.Author, x.Category, x.Code].filter(Boolean).join(' • '), g:x.PdfUrl ? 'PDF' : '', tone:'ok' })) };
+    case 'borrowed': { const r = l.filter(x => x.Status === 'borrowed'); return { t:'Buku Sedang Dipinjam', sum:r.length + ' buku beredar', rows:r.map(loanRow) }; }
+    case 'available': { const r = b.filter(x => x.Status === 'available'); return { t:'Buku Tersedia', sum:r.length + ' buku di rak', rows:r.map(bookRow) }; }
+    case 'overdue': { const r = l.filter(x => x.Status === 'borrowed' && late(x) > 0); return { t:'Peminjaman Terlambat', sum:r.length + ' buku terlambat', rows:r.map(loanRow) }; }
+    case 'members': return { t:'Anggota', sum:A.members.length + ' anggota', rows:A.members.map(m => ({ m:m.Name, s:'Kelas ' + (m.Class || '-') + ' • ' + (m.MemberID || '-'), g:'', tone:'n' })) };
+    case 'visitToday': { const r = A.visits.filter(v => String(v.VisitDate).slice(0,10) === td); return { t:'Masuk Hari Ini', sum:r.length + ' kunjungan hari ini', rows:byDate(r, 'VisitDate').map(visitRow) }; }
+    case 'visitAll': return { t:'Total Kunjungan', sum:A.visits.length + ' kunjungan (terbaru di atas)', rows:byDate(A.visits, 'VisitDate').map(visitRow) };
+    case 'loans': return { t:'Total Transaksi', sum:l.length + ' transaksi (terbaru di atas)', rows:byDate(l, 'LoanDate').map(x => ({ m:x.BookTitle, s:who(x) + ' • ' + fmtDate(x.LoanDate), g:x.Status === 'borrowed' ? 'Dipinjam' : 'Dikembalikan', tone:x.Status === 'borrowed' ? 'warn' : 'ok' })) };
+    case 'finePaid': { const r = l.filter(x => x.FinePaid === 'lunas'); return { t:'Denda Terkumpul', sum:r.length + ' transaksi • total ' + rp(r.reduce((s, x) => s + N(x.Fine), 0)), rows:r.map(x => ({ m:who(x), s:x.BookTitle, g:rp(x.Fine), tone:'ok' })) }; }
+    case 'fineUnpaid': { const r = l.filter(x => x.FinePaid === 'belum'); return { t:'Denda Belum Lunas', sum:r.length + ' transaksi • total ' + rp(r.reduce((s, x) => s + N(x.Fine), 0)), rows:r.map(x => ({ m:who(x), s:x.BookTitle, g:rp(x.Fine), tone:'bad', btn:`<button onclick="closeStat();payFine('${esc(x.ID)}')" class="text-[10px] font-black bg-red-600 text-white px-2.5 py-1.5 rounded-lg hover:bg-red-700 whitespace-nowrap">Tandai Lunas</button>` })) }; }
+  }
+  return { t:'Detail', sum:'', rows:[] };
+}
+function openStat(k) {
+  _stat = statCfg(k);
+  $('stat-title').textContent = _stat.t; $('stat-q').value = '';
+  toggleModal('modal-stat', true); renderStat();
+  setTimeout(() => { try { $('stat-q').focus({ preventScroll:true }); } catch (e) {} }, 60);
+}
+function closeStat() { toggleModal('modal-stat', false); }
+function renderStat() {
+  if (!_stat) return;
+  const q = ($('stat-q').value || '').trim().toLowerCase(), all = _stat.rows;
+  const f = q ? all.filter(r => (r.m + ' ' + r.s + ' ' + (r.g || '')).toLowerCase().includes(q)) : all, cap = 200;
+  $('stat-sum').textContent = _stat.sum + (q ? ' • ' + f.length + ' cocok' : '');
+  const tone = { ok:'bg-emerald-100 text-emerald-700', warn:'bg-amber-100 text-amber-700', bad:'bg-red-100 text-red-700', n:'bg-slate-100 text-slate-600' };
+  $('stat-list').innerHTML = f.length
+    ? f.slice(0, cap).map(r => `<div class="flex items-center gap-3 p-3 rounded-2xl border border-slate-100 bg-slate-50"><div class="min-w-0 flex-1"><p class="font-bold text-slate-800 text-sm truncate">${esc(r.m)}</p><p class="text-[11px] text-slate-400 font-bold truncate">${esc(r.s)}</p></div>${r.g ? `<span class="text-[10px] font-black px-2.5 py-1 rounded-lg whitespace-nowrap ${tone[r.tone || 'n']}">${esc(r.g)}</span>` : ''}${r.btn || ''}</div>`).join('') + (f.length > cap ? `<p class="text-center text-[11px] font-bold text-slate-400 py-2">Menampilkan ${cap} dari ${f.length} data. Gunakan pencarian untuk mempersempit.</p>` : '')
+    : empty('Tidak ada data.');
+}
 // ---------- Navigasi ----------
 function sbMini(f) {
   const sh = $('app-shell'); if (!sh) return;
@@ -1040,13 +1093,13 @@ function dashHTML() {
   const overdue = l.filter(x => x.Status === 'borrowed' && late(x) > 0).length;
   const paid = l.filter(x => x.FinePaid === 'lunas').reduce((s,x) => s + N(x.Fine), 0);
   const unpaidL = l.filter(x => x.FinePaid === 'belum'), unpaid = unpaidL.reduce((s,x) => s + N(x.Fine), 0);
-  const cards = [['library','Total Buku',b.length,'emerald'],['book-marked','Total E-Book',A.ebooks.length,'teal'],['arrow-left-right','Dipinjam',borrowed,'orange'],['check-circle-2','Tersedia',avail,'green'],['alarm-clock','Terlambat',overdue,'red'],['users','Anggota',A.members.length,'blue'],['door-open','Masuk Hari Ini',vt,'purple'],['footprints','Total Kunjungan',A.visits.length,'purple'],['repeat','Total Transaksi',l.length,'slate'],['wallet','Denda Terkumpul',rp(paid),'green'],['alert-triangle','Denda Belum Lunas',rp(unpaid),'red']];
+  const cards = [['library','Total Buku',b.length,'emerald','books'],['book-marked','Total E-Book',A.ebooks.length,'teal','ebooks'],['arrow-left-right','Dipinjam',borrowed,'orange','borrowed'],['check-circle-2','Tersedia',avail,'green','available'],['alarm-clock','Terlambat',overdue,'red','overdue'],['users','Anggota',A.members.length,'blue','members'],['door-open','Masuk Hari Ini',vt,'purple','visitToday'],['footprints','Total Kunjungan',A.visits.length,'purple','visitAll'],['repeat','Total Transaksi',l.length,'slate','loans'],['wallet','Denda Terkumpul',rp(paid),'green','finePaid'],['alert-triangle','Denda Belum Lunas',rp(unpaid),'red','fineUnpaid']];
   const act = getActivity(10).rows;
   const cnt = {}; l.forEach(x => { if (x.BookTitle) cnt[x.BookTitle] = (cnt[x.BookTitle] || 0) + 1; });
   const top = Object.entries(cnt).sort((a,b) => b[1] - a[1]).slice(0,10), mx = top.length ? top[0][1] : 1;
   return `
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 mb-6">
-      ${cards.map(c => `<div class="bg-white p-3 md:p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-2 md:gap-3 hover:border-${c[3]}-500 transition"><div class="bg-${c[3]}-50 text-${c[3]}-600 p-2.5 md:p-3 rounded-xl flex-none"><i data-lucide="${c[0]}" class="w-5 h-5"></i></div><div class="min-w-0"><p class="text-[9px] font-black text-slate-400 uppercase tracking-widest truncate">${c[1]}</p><p class="text-base md:text-xl font-black text-${c[3]}-600 truncate">${c[2]}</p></div></div>`).join('')}
+      ${cards.map(c => `<div role="button" tabindex="0" onclick="openStat('${c[4]}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openStat('${c[4]}')}" class="bg-white p-3 md:p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-2 md:gap-3 hover:border-${c[3]}-500 transition cursor-pointer"><div class="bg-${c[3]}-50 text-${c[3]}-600 p-2.5 md:p-3 rounded-xl flex-none"><i data-lucide="${c[0]}" class="w-5 h-5"></i></div><div class="min-w-0"><p class="text-[9px] font-black text-slate-400 uppercase tracking-widest truncate">${c[1]}</p><p class="text-base md:text-xl font-black text-${c[3]}-600 truncate">${c[2]}</p></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 ml-auto flex-none"></i></div>`).join('')}
     </div>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
       <div class="card"><h3 class="font-black text-slate-800 text-base md:text-lg mb-1 flex items-center gap-2"><i data-lucide="trophy" class="w-5 h-5 text-emerald-600"></i> Akumulasi Keaktifan Anggota</h3><p class="text-[10px] md:text-xs text-slate-400 font-bold mb-4">Persentase gabungan kunjungan masuk + pinjam buku (Top 10)</p>${act.length ? act.map((a,i) => rankRow(i,'emerald',a.name,`${esc(a.cls)} • ${a.visits}x masuk • ${a.loans}x pinjam`,a.pctMax,a.pct.toFixed(1)+'%')).join('') : empty('Belum ada data keaktifan.')}</div>
@@ -1521,7 +1574,7 @@ async function handleBulkCoverUpload(e) {
 function circHTML() {
   const tb = (m,l) => `<button onclick="setScanMode('${m}')" class="flex-1 py-3 rounded-2xl font-black text-[10px] md:text-sm tracking-widest transition ${scanMode===m?'platinum-gradient shadow-md':'text-slate-400 hover:bg-slate-50'}">${l}</button>`;
   const v = scanMode === 'visit', ttl = { loan:'Peminjaman', return:'Pengembalian', visit:'Kunjungan Perpus' }[scanMode];
-    const inp = (id,l,ph,hide) => `<div class="flex items-end gap-2 ${hide?'hide':''}"><div class="flex-1 min-w-0"><label class="lbl ml-2">${l}</label><input id="${id}" ${hide?'':'required'} class="inp text-center font-mono text-base md:text-lg" placeholder="${ph}" autocomplete="off"/></div><button type="button" onclick="openPicker('${id}','${id==='circ-book'?'book':'member'}')" title="Pilih manual" class="p-3 bg-emerald-700 text-white rounded-xl hover:bg-emerald-600 shadow-lg flex-none"><i data-lucide="list-search" class="w-6 h-6"></i></button><button type="button" onclick="openScanner('${id}')" title="Scan kamera" class="p-3 bg-slate-800 text-white rounded-xl hover:bg-slate-700 shadow-lg flex-none"><i data-lucide="camera" class="w-6 h-6"></i></button></div>`;
+    const inp = (id,l,ph,hide) => `<div class="flex items-end gap-2 ${hide?'hide':''}"><div class="flex-1 min-w-0"><label class="lbl ml-2">${l}</label><input id="${id}" ${hide?'':'required'} class="inp text-center font-mono text-base md:text-lg" placeholder="${ph}" autocomplete="off"/></div><button type="button" onclick="openPicker('${id}','${id==='circ-book'?'book':'member'}')" title="Pilih manual" class="p-3 bg-emerald-700 text-white rounded-xl hover:bg-emerald-600 shadow-lg flex-none"><i data-lucide="search" class="w-6 h-6" stroke-width="2.6"></i></button><button type="button" onclick="openScanner('${id}')" title="Scan kamera" class="p-3 bg-slate-800 text-white rounded-xl hover:bg-slate-700 shadow-lg flex-none"><i data-lucide="camera" class="w-6 h-6"></i></button></div>`;
   return `<div class="max-w-xl mx-auto space-y-6 pt-2"><div class="flex bg-white p-1.5 rounded-3xl border border-slate-100 shadow-sm">${tb('loan','SCAN PINJAM')}${tb('return','SCAN KEMBALI')}${tb('visit','SCAN MASUK')}</div>
     <form onsubmit="submitCirc(event)" class="card !p-6 md:!p-10 shadow-xl space-y-5"><div class="text-center mb-4"><div class="w-16 h-16 mx-auto bg-slate-50 rounded-3xl flex items-center justify-center mb-3 text-emerald-700 border"><i data-lucide="${v?'door-open':'scan-line'}" class="w-8 h-8"></i></div><h3 class="font-black text-xl text-slate-800 uppercase">Mode ${ttl}</h3></div>
     ${inp('circ-book','ID / Barcode BUKU','Scan Buku...',v)}${inp('circ-member','ID / Barcode ANGGOTA','Scan Kartu Siswa...',false)}
